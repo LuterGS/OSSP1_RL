@@ -10,11 +10,9 @@
 
 ## Controls
 * Left, Right : Move Left, Right.
-* Space : Junp
+* Space : Jump
 * Shift : Boost
 
 ## Dependencied
 * pygame
 * scipy
-
-
