@@ -1,4 +1,4 @@
-import A3C
+from RL.Agent import A3C
 import gym
 
 

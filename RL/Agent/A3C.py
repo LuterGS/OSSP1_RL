@@ -2,7 +2,7 @@ from threading import Thread, Lock
 
 import gym
 import tensorflow as tf
-import ActorCriticModels as models
+import RL.Agent.ActorCriticModels as models
 import numpy as np
 
 CUR_EP = 0
