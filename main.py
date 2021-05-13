@@ -5,7 +5,7 @@ from classes.Menu import Menu
 from classes.Sound import Sound
 from entities.Mario import Mario
 from openCV import ImgExtract
-
+import cv2
 
 windowSize = 640, 480
 
@@ -28,9 +28,9 @@ def main():
 
     fps= 0
     while not mario.restart:
-        #Image Grab
         if fps == 60 : fps = 0
-        ImgExtract.Capture2(screen,fps,5)
+        #image Capture
+        ImgExtract.Capture(screen,fps,5,cv2.COLOR_BGR2GRAY)
         pygame.display.set_caption("Super Mario running with {:d} FPS".format(int(clock.get_fps())))
         if mario.pause:
             mario.pauseObj.update()
