@@ -1,6 +1,7 @@
-# Super Mario Implementation in Python
+# Super Mario Games
 
-This is inspired by Meth-Meth-Method's [super mario game](https://github.com/meth-meth-method/super-mario/)
+원본 pygame 은 Meth-Meth-Method's [super mario game](https://github.com/meth-meth-method/super-mario/) 이고,
+이를 바탕으로 Random map 생성.
 
 ## Running
 
@@ -20,14 +21,6 @@ This is inspired by Meth-Meth-Method's [super mario game](https://github.com/met
 * Shift: Boost   
 * Left/Right Mouseclick: secret   
 
-## Current state:
-![Alt text](img/pics.png "current state")
-
 ## Dependencies	
 * pygame	
 * scipy	
-
-## Contribution
-
-If you have any Improvements/Ideas/Refactors feel free to contact me or make a Pull Request.
-The code needs still alot of refactoring as it is right now, so I appreciate any kind of Contribution.
