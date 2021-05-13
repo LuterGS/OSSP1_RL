@@ -174,7 +174,7 @@ class MakeRandomMap:
     def make_RandomBox(self):
         temp = []
         how_many_RandomBox = 5
-
+    
     def make_Goomba(self):
         temp = []
         #빈 땅에 굼바 만들기.
@@ -191,6 +191,9 @@ class MakeRandomMap:
         for item in x:
             temp.append([12, item])
         return temp
+
+    def retMapSize(self):
+        return self.maximum_size
 
     def do_test(self):
         self.data["level"]={"objects":self.make_ObjectJson(),"layers":self.make_LayerJson()}

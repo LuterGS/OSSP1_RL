@@ -11,7 +11,7 @@ class Camera:
     def move(self):
         xPosFloat = self.entity.getPosIndexAsFloat().x
         #print("xPosFloat: "+str(xPosFloat))
-        if 10 < xPosFloat:# < 60:
+        if 10 < xPosFloat < 320:
             self.pos.x = -xPosFloat + 10
         self.x = self.pos.x * 32
         self.y = self.pos.y * 32

@@ -44,6 +44,7 @@ class Level:
             [self.addRandomBox(x, y, item) for x, y, item in data["level"]["entities"]["RandomBox"]]
         except:
             # if no entities in Level
+            print("Exceptions")
             pass
 
     def loadLayers(self, data):
