@@ -14,30 +14,17 @@ import cv2
 
 from MarioGame.abs_filepath import ABS_PATH
 
+from multiprocessing import Process, Queue
 
 button_log = ["left", "right", "up", "dash"]
 
-class BasicEnv(gym.Env):
-    """Custom environment Basic code"""
-    metadata = {"render.modes": ["human"]}
 
-    def __init__(self):
-        super(BasicEnv, self).__init__()
-
-        # 보상값을 설정함
-        self.reward_range = (0, 1)
-        # env.reward_range. 했을 때 출력하는 결과. reward를 조정함에 있어 이것도 변경해주는것이 좋음
-
-        # 움직일 수 있는 방향을 의미함
-        # https://github.com/LuterGS/OSSP1_RL/blob/Pygame/classes/Input.py 의 방향을 참고함.
-        self.action_space = spaces.MultiDiscrete([1, 1, 1])
-        # 각각 좌,우 / 점프 / 가속을 의미함
-
-        # 볼 수 있는 환경을 의미함
-        self.observation_space = spaces.Box(low=0, high=1, shape=(480, 640, ), dtype=np.float)
-        # 최대/최소값이 1/0으로 정규화된 3차원 numpy array를 입력으로 받음, 현재 row, col은 123인데, 게임 보고 변경해야할듯
-
-        # Mario Game import
+class MultiMario(Process):
+    def __init__(self, ptoc_queue: Queue, ctop_queue: Queue):
+        Process.__init__(self)
+        self.ptoc_queue = ptoc_queue
+        # [1, 0]은 reset, [2, action]는 step으로 하자.
+        self.ctop_queue = ctop_queue
 
     def reset(self):
 
@@ -49,6 +36,8 @@ class BasicEnv(gym.Env):
         self.sound = Sound()
         self.level = Level(self.screen, self.sound, self.dashboard)
         self.menu = Menu(self.screen, self.dashboard, self.level, self.sound)
+
+        print("init complete")
 
         # 메뉴에서 게임 들어갈 때까지 메뉴 업데이트
         ctr = 0
@@ -115,13 +104,18 @@ class BasicEnv(gym.Env):
         #         print(button_log[i] + ", ", end=" ")
         # print("pressed\n")
 
-
         # action을 토대로 game에 입력을 줌 (30FPS 기준으로 이 입력이 0.2초동안, 즉 6프레임만큼 유지된다고 가정하자
         #       -> 추후 변경 가능
+
+        done = False
         self.mario.input.CUR_BUTTON_PRESSED = button_pressed
 
         # 입력을 기반으로 게임 진행
         for i in range(6):
+            if self.mario.restart:
+                done = True
+                break
+
             if self.mario.pause:
                 self.mario.pauseObj.update()
             else:
@@ -134,12 +128,6 @@ class BasicEnv(gym.Env):
         # 이후에 observation을 받아옴
         observation = ImgExtract.Capture(self.screen, cv2.COLOR_BGR2GRAY)
         reward = -0.01  # 추후에 이미지 토대로 calculation 가능
-        done = False
-
-        # done check
-        if self.mario.restart:
-            print("restart requsted, reset in progress...")
-            done = True
 
         # return
         return observation, reward, done, None
@@ -154,7 +142,54 @@ class BasicEnv(gym.Env):
         # reward = self.reward_calculation(observation)
 
         # 결과값 return
-        # return observation, reward, done, {"pressed":, action}
+        # return [observation, reward, done, {"pressed":, action}]
+
+    def program_run(self):
+
+        while True:
+            val = self.ptoc_queue.get()
+            if val[0] == 1:
+                self.ctop_queue.put(self.reset())
+            if val[0] == 2:
+                self.ctop_queue.put(self.step(val[1]))
+
+    def run(self):
+        self.program_run()
+
+
+class BasicEnv(gym.Env):
+    """Custom environment Basic code"""
+    metadata = {"render.modes": ["human"]}
+
+    def __init__(self):
+        super(BasicEnv, self).__init__()
+
+        # 보상값을 설정함
+        self.reward_range = (0, 1)
+        # env.reward_range. 했을 때 출력하는 결과. reward를 조정함에 있어 이것도 변경해주는것이 좋음
+
+        # 움직일 수 있는 방향을 의미함
+        # https://github.com/LuterGS/OSSP1_RL/blob/Pygame/classes/Input.py 의 방향을 참고함.
+        self.action_space = spaces.MultiDiscrete([1, 1, 1])
+        # 각각 좌,우 / 점프 / 가속을 의미함
+
+        # 볼 수 있는 환경을 의미함
+        self.observation_space = spaces.Box(low=0, high=1, shape=(480, 640, ), dtype=np.float)
+        # 최대/최소값이 1/0으로 정규화된 3차원 numpy array를 입력으로 받음, 현재 row, col은 123인데, 게임 보고 변경해야할듯
+
+        # Mario Game import
+        self.ptoc_queue = Queue()
+        self.ctop_queue = Queue()
+        self.mario = MultiMario(self.ptoc_queue, self.ctop_queue)
+        self.mario.start()
+
+    def reset(self):
+        self.ptoc_queue.put([1, 0])
+        return self.ctop_queue.get()
+
+    def step(self, action):
+        self.ptoc_queue.put([2, action])
+        return self.ctop_queue.get()
 
     def reward(self, observation):
         reward = 0

@@ -200,7 +200,7 @@ class Menu:
         # print(self.key_input_status)
 
         if self.key_input_status[5]:        # 뒤로가기
-            print("Escape BTN")
+            # print("Escape BTN")
             if self.inChoosingLevel or self.inSettings:
                 self.inChoosingLevel = False
                 self.inSettings = False
@@ -211,7 +211,7 @@ class Menu:
             self.key_input_status[5] = False
 
         elif self.key_input_status[0]:      # 상
-            print("Up BTN")
+            # print("Up BTN")
             if self.inChoosingLevel:
                 if self.currSelectedLevel > 3:
                     self.currSelectedLevel -= 3
@@ -221,7 +221,7 @@ class Menu:
             self.key_input_status[0] = False
 
         elif self.key_input_status[1]:      # 하
-            print("Down BTN")
+            # print("Down BTN")
             if self.inChoosingLevel:
                 if self.currSelectedLevel+3 <= self.levelCount:
                     self.currSelectedLevel += 3
@@ -231,21 +231,21 @@ class Menu:
             self.key_input_status[1] = False
 
         elif self.key_input_status[2]:      # 좌
-            print("Left BTN")
+            # print("Left BTN")
             if self.currSelectedLevel > 1:
                 self.currSelectedLevel -= 1
                 self.drawLevelChooser()
             self.key_input_status[2] = False
 
         elif self.key_input_status[3]:      # 우
-            print("Right BTN")
+            # print("Right BTN")
             if self.currSelectedLevel < self.levelCount:
                 self.currSelectedLevel += 1
                 self.drawLevelChooser()
             self.key_input_status[3] = False
 
         elif self.key_input_status[4]:      # 엔터
-            print("Return BTN")
+            # print("Return BTN")
             if self.inChoosingLevel:
                 self.inChoosingLevel = False
                 self.dashboard.state = "start"
