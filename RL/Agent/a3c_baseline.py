@@ -5,7 +5,7 @@ from datetime import datetime
 from multiprocessing import cpu_count
 from threading import Thread, Lock
 
-from multiprocessing import Process, Queue, Pipe
+from multiprocessing import Process, Queue
 
 import gym
 import numpy as np
@@ -48,7 +48,6 @@ class Actor:
         self.model = self.nn_model()
         self.opt = tf.keras.optimizers.Adam(args.actor_lr)
         self.entropy_beta = 0.01
-        print("model is successfully generated")
 
     def nn_model(self):
         state_input = Input(shape=(480, 640, ))
@@ -61,10 +60,8 @@ class Actor:
         return tf.keras.models.Model(state_input, [mu_output, std_output])
 
     def get_action(self, state):
-        print("state : ", state.shape)
         state = np.reshape(state, [1, 480, 640])
-        mu, std = self.model.predict(state, use_multiprocessing=True)
-        print("finished")
+        mu, std = self.model.predict(state, use_multiprocessing=True)       # TODO : 무슨 이유에서인지 얘가 정상적으로 실행이 안됨
         mu, std = mu[0], std[0]
         return np.random.normal(mu, std, size=self.action_dim)
 
@@ -233,107 +230,117 @@ class A3CWorker(Process):
         return td_targets - baselines
 
     def train(self):
-        cur_ep = 0
-        while self.max_episodes >= cur_ep:
-            state_batch = []
-            action_batch = []
-            reward_batch = []
-            episode_reward, done = 0, False
+        with tf.device('/cpu:0'):
+            cur_ep = 0
+            while self.max_episodes >= cur_ep:
+                state_batch = []
+                action_batch = []
+                reward_batch = []
+                episode_reward, done = 0, False
 
-            state = self.env.reset()
-            print(f'process {self.nums} is successfully reseted, now progress...')
+                state = self.env.reset()
+                print(f'process {self.nums} is successfully reseted, now progress...')
 
-            while not done:
-                # self.env.render()
+                while not done:
+                    # self.env.render()
 
-                print(f'progress {self.nums} reached -1')
+                    print(f'progress {self.nums} reached -1')
 
-                action = self.actor.get_action(state)
+                    action = self.actor.get_action(state)
 
-                print(f'progress {self.nums} reached -0.5')
+                    print(f'progress {self.nums} reached -0.5')
 
-                action = np.clip(action, -self.action_bound, self.action_bound)
+                    action = np.clip(action, -self.action_bound, self.action_bound)
 
-                print(f'progress {self.nums} reached 0')
+                    print(f'progress {self.nums} reached 0')
 
-                next_state, reward, done, _ = self.env.step(action)
+                    next_state, reward, done, _ = self.env.step(action)
 
-                print(f'progress {self.nums} reached 0.5')
-
-
-                state = np.reshape(state, [1, 480, 640])
-                action = np.reshape(action, [1, 3])
-                next_state = np.reshape(next_state, [1, 480, 640])
-                reward = np.reshape(reward, [1, 1])
-                state_batch.append(state)
-                action_batch.append(action)
-                reward_batch.append(reward)
-                print(f'progress {self.nums} reached 1')
-
-                if len(state_batch) >= args.update_interval or done:
-                    states = np.array([state.squeeze() for state in state_batch])
-                    actions = np.array([action.squeeze() for action in action_batch])
-                    rewards = np.array([reward.squeeze() for reward in reward_batch])
-                    # print("in calculate (next_state) : ", next_state.shape)
-                    next_v_value = self.critic.model.predict(next_state)
-                    # print("complete calculate (next_v_value) : ", next_v_value.shape)
-                    td_targets = self.n_step_td_target(
-                        (rewards + 8) / 8, next_v_value, done
-                    )
-                    advantages = td_targets - self.critic.model.predict(states)
-
-                    print(f'progress {self.nums} reached 2')
-
-                    # local weight 임시저장 - 불필요
-                    # temp_actor_weight = self.actor.model.get_weights()
-                    # temp_critic_weight = self.critic.model.get_weights()
-
-                    # global 가중치 요청 및 저장
-                    # signal 보내는 부분
-                    print(f'process {self.nums} will request global weight')
-                    self.msg_queue.put(0)
-                    print(f'process {self.nums} requested global weight')
-
-                    # 받을때까지 대기
-                    print(f'process {self.nums} will get global weight')
-                    global_weight = self.ptoc_queue.get()
-                    print(f'process {self.nums} successfully get global weight')
-                    # 받았으면 값을 현재 신경망에 적용시키고 학습
-                    # 0번째가 actor, 1번째가 critic이라고 가정
-
-                    self.actor.model.set_weights(global_weight[0])
-                    self.critic.model.set_weights(global_weight[1])
-                    # 이게 이제 global과 동일해짐
-
-                    actor_loss = self.actor.train(states, actions, advantages)
-                    critic_loss = self.critic.train(states, td_targets)
-
-                    # actor_loss = self.global_actor.train(states, actions, advantages)
-                    # critic_loss = self.global_critic.train(states, td_targets)
-                    #
-                    # self.actor.model.set_weights(self.global_actor.model.get_weights())
-                    # self.critic.model.set_weights(
-                    #     self.global_critic.model.get_weights()
-                    # )
-
-                    # 이제 이 신경망의 값을 다시 보냄.
-                    self.msg_queue.put(1)
-                    self.ctop_queue.put([self.actor.model.get_weights(), self.critic.model.get_weights()])
+                    print(f'progress {self.nums} reached 0.5')
 
 
-                    state_batch = []
-                    action_batch = []
-                    reward_batch = []
+                    state = np.reshape(state, [1, 480, 640])
+                    action = np.reshape(action, [1, 3])
+                    next_state = np.reshape(next_state, [1, 480, 640])
+                    reward = np.reshape(reward, [1, 1])
+                    state_batch.append(state)
+                    action_batch.append(action)
+                    reward_batch.append(reward)
+                    print(f'progress {self.nums} reached 1')
 
-                episode_reward += reward[0][0]
-                state = next_state[0]
+                    if len(state_batch) >= args.update_interval or done:
+                        states = np.array([state.squeeze() for state in state_batch])
+                        actions = np.array([action.squeeze() for action in action_batch])
+                        rewards = np.array([reward.squeeze() for reward in reward_batch])
+                        # print("in calculate (next_state) : ", next_state.shape)
+                        print("shape of next_state : ", next_state.shape)
+                        next_v_value = self.critic.model.predict_step(next_state)       # 원래 predict 임
+                        # print("complete calculate (next_v_value) : ", next_v_value.shape)
+                        td_targets = self.n_step_td_target(
+                            (rewards + 8) / 8, next_v_value, done
+                        )
+                        print("shape of states : ", states.shape)
 
-            print(f"Episode#{cur_ep} Reward:{episode_reward} Worker:{self.nums}")
-            tf.summary.scalar("episode_reward", episode_reward, step=cur_ep)
+                        # predicts = np.zeros_like(states.shape[0])
+                        # for i in range(states.shape[0]):
+                        #     print("shape of states[i] : ", states[i].shape, states[i])
+                        #     predicts[i] = self.critic.model.predict_step(states[i]) #, use_multiprocessing=True)
 
-            self.msg_queue.put(2)
-            cur_ep = self.ptoc_queue.get()
-        self.msg_queue.put(3)
+                        advantages = td_targets - self.critic.model.predict(states, use_multiprocessing=True)
+                        # advantages = td_targets - predicts
+
+                        print(f'progress {self.nums} reached 2')
+
+                        # local weight 임시저장 - 불필요
+                        # temp_actor_weight = self.actor.model.get_weights()
+                        # temp_critic_weight = self.critic.model.get_weights()
+
+                        # global 가중치 요청 및 저장
+                        # signal 보내는 부분
+                        print(f'process {self.nums} will request global weight')
+                        self.msg_queue.put(0)
+                        print(f'process {self.nums} requested global weight')
+
+                        # 받을때까지 대기
+                        print(f'process {self.nums} will get global weight')
+                        global_weight = self.ptoc_queue.get()
+                        print(f'process {self.nums} successfully get global weight')
+                        # 받았으면 값을 현재 신경망에 적용시키고 학습
+                        # 0번째가 actor, 1번째가 critic이라고 가정
+
+                        self.actor.model.set_weights(global_weight[0])
+                        self.critic.model.set_weights(global_weight[1])
+                        # 이게 이제 global과 동일해짐
+
+                        actor_loss = self.actor.train(states, actions, advantages)
+                        critic_loss = self.critic.train(states, td_targets)
+
+                        # actor_loss = self.global_actor.train(states, actions, advantages)
+                        # critic_loss = self.global_critic.train(states, td_targets)
+                        #
+                        # self.actor.model.set_weights(self.global_actor.model.get_weights())
+                        # self.critic.model.set_weights(
+                        #     self.global_critic.model.get_weights()
+                        # )
+
+                        # 이제 이 신경망의 값을 다시 보냄.
+                        self.msg_queue.put(1)
+                        self.ctop_queue.put([self.actor.model.get_weights(), self.critic.model.get_weights()])
+
+
+                        state_batch = []
+                        action_batch = []
+                        reward_batch = []
+
+                    episode_reward += reward[0][0]
+                    state = next_state[0]
+
+                print(f"Episode#{cur_ep} Reward:{episode_reward} Worker:{self.nums}")
+                tf.summary.scalar("episode_reward", episode_reward, step=cur_ep)
+
+                self.msg_queue.put(2)
+                cur_ep = self.ptoc_queue.get()
+            self.msg_queue.put(3)
 
     def run(self):
         self.train()
