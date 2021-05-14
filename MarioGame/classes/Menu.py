@@ -39,6 +39,9 @@ class Menu:
         )
         self.loadSettings(ABS_PATH + "settings.json")
 
+        self.key_input_status = [False, False, False, False, False, False]
+        # 각각 상/하/좌/우/엔터/뒤로가기
+
     def update(self):
         self.checkInput()
         if self.inChoosingLevel:
@@ -189,84 +192,95 @@ class Menu:
         return res
 
     def checkInput(self):
-        events = pygame.event.get()
-        for event in events:
-            if event.type == pygame.QUIT:
+        # events = pygame.event.get()
+        # for event in events:
+        #     if event.type == pygame.QUIT:
+        #         pygame.quit()
+        #         sys.exit()
+        # print(self.key_input_status)
+
+        if self.key_input_status[5]:        # 뒤로가기
+            # print("Escape BTN")
+            if self.inChoosingLevel or self.inSettings:
+                self.inChoosingLevel = False
+                self.inSettings = False
+                self.__init__(self.screen, self.dashboard, self.level, self.sound)
+            else:
                 pygame.quit()
                 sys.exit()
-            if event.type == pygame.KEYDOWN:
-                print("KeyDown")
-                if event.key == pygame.K_ESCAPE:
-                    print("Escape BTN")
-                    if self.inChoosingLevel or self.inSettings:
-                        self.inChoosingLevel = False
-                        self.inSettings = False
-                        self.__init__(self.screen, self.dashboard, self.level, self.sound)
+            self.key_input_status[5] = False
+
+        elif self.key_input_status[0]:      # 상
+            # print("Up BTN")
+            if self.inChoosingLevel:
+                if self.currSelectedLevel > 3:
+                    self.currSelectedLevel -= 3
+                    self.drawLevelChooser()
+            if self.state > 0:
+                self.state -= 1
+            self.key_input_status[0] = False
+
+        elif self.key_input_status[1]:      # 하
+            # print("Down BTN")
+            if self.inChoosingLevel:
+                if self.currSelectedLevel+3 <= self.levelCount:
+                    self.currSelectedLevel += 3
+                    self.drawLevelChooser()
+            if self.state < 2:
+                self.state += 1
+            self.key_input_status[1] = False
+
+        elif self.key_input_status[2]:      # 좌
+            # print("Left BTN")
+            if self.currSelectedLevel > 1:
+                self.currSelectedLevel -= 1
+                self.drawLevelChooser()
+            self.key_input_status[2] = False
+
+        elif self.key_input_status[3]:      # 우
+            # print("Right BTN")
+            if self.currSelectedLevel < self.levelCount:
+                self.currSelectedLevel += 1
+                self.drawLevelChooser()
+            self.key_input_status[3] = False
+
+        elif self.key_input_status[4]:      # 엔터
+            # print("Return BTN")
+            if self.inChoosingLevel:
+                self.inChoosingLevel = False
+                self.dashboard.state = "start"
+                self.dashboard.time = 0
+                self.level.loadLevel(self.levelNames[self.currSelectedLevel-1])
+                self.dashboard.levelName = self.levelNames[self.currSelectedLevel-1].split("Level")[1]
+                self.start = True
+                return
+            if not self.inSettings:
+                if self.state == 0:
+                    self.chooseLevel()
+                elif self.state == 1:
+                    self.inSettings = True
+                    self.state = 0
+                elif self.state == 2:
+                    pygame.quit()
+                    sys.exit()
+            else:
+                if self.state == 0:
+                    if self.music:
+                        self.sound.music_channel.stop()
+                        self.music = False
                     else:
-                        pygame.quit()
-                        sys.exit()
-                elif event.key == pygame.K_UP or event.key == pygame.K_k:
-                    print("Up BTN")
-                    if self.inChoosingLevel:
-                        if self.currSelectedLevel > 3:
-                            self.currSelectedLevel -= 3
-                            self.drawLevelChooser()
-                    if self.state > 0:
-                        self.state -= 1
-                elif event.key == pygame.K_DOWN or event.key == pygame.K_j:
-                    print("Down BTN")
-                    if self.inChoosingLevel:
-                        if self.currSelectedLevel+3 <= self.levelCount:
-                            self.currSelectedLevel += 3
-                            self.drawLevelChooser()
-                    if self.state < 2:
-                        self.state += 1
-                elif event.key == pygame.K_LEFT or event.key == pygame.K_h:
-                    print("Left BTN")
-                    if self.currSelectedLevel > 1:
-                        self.currSelectedLevel -= 1
-                        self.drawLevelChooser()
-                elif event.key == pygame.K_RIGHT or event.key == pygame.K_l:
-                    print("Right BTN")
-                    if self.currSelectedLevel < self.levelCount:
-                        self.currSelectedLevel += 1
-                        self.drawLevelChooser()
-                elif event.key == pygame.K_RETURN:
-                    print("Return BTN")
-                    if self.inChoosingLevel:
-                        self.inChoosingLevel = False
-                        self.dashboard.state = "start"
-                        self.dashboard.time = 0
-                        self.level.loadLevel(self.levelNames[self.currSelectedLevel-1])
-                        self.dashboard.levelName = self.levelNames[self.currSelectedLevel-1].split("Level")[1]
-                        self.start = True
-                        return
-                    if not self.inSettings:
-                        if self.state == 0:
-                            self.chooseLevel()
-                        elif self.state == 1:
-                            self.inSettings = True
-                            self.state = 0
-                        elif self.state == 2:
-                            pygame.quit()
-                            sys.exit()
+                        self.sound.music_channel.play(self.sound.soundtrack, loops=-1)
+                        self.music = True
+                    self.saveSettings(ABS_PATH + "settings.json")
+                elif self.state == 1:
+                    if self.sfx:
+                        self.sound.allowSFX = False
+                        self.sfx = False
                     else:
-                        if self.state == 0:
-                            if self.music:
-                                self.sound.music_channel.stop()
-                                self.music = False
-                            else:
-                                self.sound.music_channel.play(self.sound.soundtrack, loops=-1)
-                                self.music = True
-                            self.saveSettings(ABS_PATH + "settings.json")
-                        elif self.state == 1:
-                            if self.sfx:
-                                self.sound.allowSFX = False
-                                self.sfx = False
-                            else:
-                                self.sound.allowSFX = True
-                                self.sfx = True
-                            self.saveSettings(ABS_PATH + "settings.json")
-                        elif self.state == 2:
-                            self.inSettings = False
-        pygame.display.update()
+                        self.sound.allowSFX = True
+                        self.sfx = True
+                    self.saveSettings(ABS_PATH + "settings.json")
+                elif self.state == 2:
+                    self.inSettings = False
+            self.key_input_status[4] = False
+            pygame.display.update()

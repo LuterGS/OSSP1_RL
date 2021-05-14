@@ -46,7 +46,7 @@ class Level:
             [self.addRandomBox(x, y, item) for x, y, item in data["level"]["entities"]["RandomBox"]]
         except:
             # if no entities in Level
-            print("Exceptions")
+            # print("Exceptions")
             pass
 
     def loadLayers(self, data):
@@ -74,22 +74,26 @@ class Level:
             for x, y in data["level"]["objects"]["bush"]:
                 self.addBushSprite(x, y)
         except:
-            print("NoBush")
+            # print("NoBush")
+            pass
         try:
             for x, y in data["level"]["objects"]["cloud"]:
                 self.addCloudSprite(x, y)
         except:
-            print("No Clouds")
+            # print("No Clouds")
+            pass
         try:
             for x, y, z in data["level"]["objects"]["pipe"]:
                 self.addPipeSprite(x, y, z)
         except:
-            print("No Pipe")
+            # print("No Pipe")
+            pass
         try:
             for x, y in data["level"]["objects"]["sky"]:
                 self.level[y][x] = Tile(self.sprites.spriteCollection.get("sky"), None)
         except:
-            print("No Sky")
+            # print("No Sky")
+            pass
         try:
             for x, y in data["level"]["objects"]["ground"]:
                 self.level[y][x] = Tile(
@@ -97,7 +101,8 @@ class Level:
                     pygame.Rect(x * 32, y * 32, 32, 32),
                 )
         except:
-            print("NoGround.")
+            # print("NoGround.")
+            pass
 
     def updateEntities(self, cam):
         for entity in self.entityList:

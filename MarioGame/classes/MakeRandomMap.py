@@ -86,13 +86,13 @@ class MakeRandomMap:
                 self.forbidden_X.append(item+index)
                 self.havehieghts.append((item+index,height))
 
-        print("---Make Ground---")
-        print(x)
-        print("Forbidden_X")
-        print(self.forbidden_X)
-        print("haveHeight")
-        print(self.havehieghts)
-        print("-----------------")
+        # print("---Make Ground---")
+        # print(x)
+        # print("Forbidden_X")
+        # print(self.forbidden_X)
+        # print("haveHeight")
+        # print(self.havehieghts)
+        # print("-----------------")
         return temp
 
     def make_Sky(self):
@@ -117,15 +117,15 @@ class MakeRandomMap:
             self.forbidden_X.append(x[Repeats]+index+1)
             self.external_walls.append(x[Repeats]+index+1)
 
-        print("---Make Sky---")
-        print(x)
-        print("Forbidden_X")
-        print(self.forbidden_X)
-        print("External Walls")
-        print(self.external_walls)
-        print("haveHeight")
-        print(self.havehieghts)
-        print("--------------")
+        # print("---Make Sky---")
+        # print(x)
+        # print("Forbidden_X")
+        # print(self.forbidden_X)
+        # print("External Walls")
+        # print(self.external_walls)
+        # print("haveHeight")
+        # print(self.havehieghts)
+        # print("--------------")
         #self.forbidden_X.extend(temp)
         return temp
 
@@ -142,13 +142,13 @@ class MakeRandomMap:
             #높이 정보를 가지고 있는 애들 리스트.
             self.havehieghts.append((x[Repeats],height))
 
-        print("---Make Pipes---")
-        print(x)
-        print("Forbidden_X")
-        print(self.forbidden_X)
-        print("haveHeight")
-        print(self.havehieghts)
-        print("----------------")
+        # print("---Make Pipes---")
+        # print(x)
+        # print("Forbidden_X")
+        # print(self.forbidden_X)
+        # print("haveHeight")
+        # print(self.havehieghts)
+        # print("----------------")
 
         return temp
 
@@ -199,7 +199,7 @@ class MakeRandomMap:
 
     def do_test(self):
         self.data["level"]={"objects":self.make_ObjectJson(),"layers":self.make_LayerJson()}
-        print(json.dumps(self.data,ensure_ascii=False,indent="\t"))
+        # print(json.dumps(self.data,ensure_ascii=False,indent="\t"))
 
     def write_Json(self):
         self.data["level"]={"objects":self.make_ObjectJson(),"layers":self.make_LayerJson(),"entities":self.make_EntitiesJson()}
