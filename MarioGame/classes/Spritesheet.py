@@ -4,7 +4,7 @@ import pygame
 class Spritesheet(object):
     def __init__(self, filename):
         try:
-            print(filename)
+            # print(filename)
             self.sheet = pygame.image.load(filename)
             self.sheet = pygame.image.load(filename)
             if not self.sheet.get_alpha():

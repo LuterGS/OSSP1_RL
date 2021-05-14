@@ -197,7 +197,7 @@ class Menu:
         #     if event.type == pygame.QUIT:
         #         pygame.quit()
         #         sys.exit()
-        print(self.key_input_status)
+        # print(self.key_input_status)
 
         if self.key_input_status[5]:        # 뒤로가기
             print("Escape BTN")

@@ -11,4 +11,4 @@ def Capture(screen, scales): # fps,Captured_fps,scales):
     imgdata = cv2.flip(imgdata,1)
     imgdata = cv2.rotate(imgdata,cv2.ROTATE_90_COUNTERCLOCKWISE)
     cv2.imshow('window',imgdata)
-    return imgdata
+    return np.asarray(imgdata, dtype=np.float) / 255
