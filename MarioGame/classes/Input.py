@@ -3,11 +3,15 @@ from pygame.locals import *
 import sys
 
 
+
+
 class Input:
     def __init__(self, entity):
         self.mouseX = 0
         self.mouseY = 0
         self.entity = entity
+        self.CUR_BUTTON_PRESSED = [False, False, False, False]
+        # 각각 방향키 좌 / 우 / 위 / LSHIFT를 의미함.
 
     def checkForInput(self):
         events = pygame.event.get()
@@ -16,19 +20,33 @@ class Input:
         self.checkForQuitAndRestartInputEvents(events)
 
     def checkForKeyboardInput(self):
-        pressedKeys = pygame.key.get_pressed()
+        # pressedKeys = pygame.key.get_pressed()
+        #
+        # if pressedKeys[K_LEFT] or pressedKeys[K_h] and not pressedKeys[K_RIGHT]:
+        #     self.entity.traits["goTrait"].direction = -1
+        # elif pressedKeys[K_RIGHT] or pressedKeys[K_l] and not pressedKeys[K_LEFT]:
+        #     self.entity.traits["goTrait"].direction = 1
+        # else:
+        #     self.entity.traits['goTrait'].direction = 0
+        #
+        # isJumping = pressedKeys[K_SPACE] or pressedKeys[K_UP] or pressedKeys[K_k]
+        # self.entity.traits['jumpTrait'].jump(isJumping)
+        #
+        # self.entity.traits['goTrait'].boost = pressedKeys[K_LSHIFT]
 
-        if pressedKeys[K_LEFT] or pressedKeys[K_h] and not pressedKeys[K_RIGHT]:
+        # 기존 버전 말고 다시 rebase
+        if self.CUR_BUTTON_PRESSED[0] and not self.CUR_BUTTON_PRESSED[1]:
             self.entity.traits["goTrait"].direction = -1
-        elif pressedKeys[K_RIGHT] or pressedKeys[K_l] and not pressedKeys[K_LEFT]:
+        elif self.CUR_BUTTON_PRESSED[1] and not self.CUR_BUTTON_PRESSED[0]:
             self.entity.traits["goTrait"].direction = 1
         else:
             self.entity.traits['goTrait'].direction = 0
 
-        isJumping = pressedKeys[K_SPACE] or pressedKeys[K_UP] or pressedKeys[K_k]
+        isJumping = self.CUR_BUTTON_PRESSED[2]
         self.entity.traits['jumpTrait'].jump(isJumping)
 
-        self.entity.traits['goTrait'].boost = pressedKeys[K_LSHIFT]
+        self.entity.traits['goTrait'].boost = self.CUR_BUTTON_PRESSED[3]
+
 
     def checkForMouseInput(self, events):
         mouseX, mouseY = pygame.mouse.get_pos()
