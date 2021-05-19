@@ -21,7 +21,7 @@ tf.keras.backend.set_floatx("float64")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--env", default="TEST")
-parser.add_argument("--num-workers", default=1, type=int)
+parser.add_argument("--num-workers", default=4, type=int)
 parser.add_argument("--actor-lr", type=float, default=0.001)
 parser.add_argument("--critic-lr", type=float, default=0.002)
 parser.add_argument("--update-interval", type=int, default=5)
@@ -59,12 +59,12 @@ class Actor:
         # return tf.keras.models.Model(state_input, [mu_output, std_output])
 
         inputs = layers.Input((480, 640, 1,))
-        cnn_1 = layers.Conv2D(64, 5, activation='relu')(inputs)
+        cnn_1 = layers.Conv2D(32, 3, strides=(3, 3), activation='relu')(inputs)
         batch_norm = layers.BatchNormalization()(cnn_1)
         dropout = layers.Dropout(0.2)(batch_norm)
-        cnn_2 = layers.Conv2D(128, 3, activation='relu')(dropout)
-        batch_norm = layers.BatchNormalization()(cnn_2)
-        dropout = layers.Dropout(0.2)(batch_norm)
+        # cnn_2 = layers.Conv2D(128, 3, activation='relu')(dropout)
+        # batch_norm = layers.BatchNormalization()(cnn_2)
+        # dropout = layers.Dropout(0.2)(batch_norm)
         flatten = layers.Flatten()(dropout)
         out_mu = layers.Dense(self.action_dim, activation='relu')(flatten)
         mu_output = layers.Lambda(lambda x: x * self.action_bound)(out_mu)
@@ -107,11 +107,12 @@ class Critic:
 
     def nn_model(self):
         return tf.keras.Sequential([
-            layers.Input((480, 640, 1,)),
-            layers.Conv2D(64, 5, activation='relu'),
+            layers.Input(shape=(480, 640, )),
+            layers.Reshape((480, 640, 1, )),
+            layers.Conv2D(64, 10, strides=(10, 10,), activation='relu'),
             layers.Dropout(0.2),
-            layers.Conv2D(32, 3, activation='relu'),
-            layers.Dropout(0.2),
+            # layers.Conv2D(32, 3, activation='relu'),
+            # layers.Dropout(0.2),
             layers.Flatten(),
             layers.Dense(50, activation='relu'),
             layers.Dense(1, activation='linear')
@@ -150,7 +151,7 @@ class Agent:
     def __init__(self, env_name, num_workers=cpu_count()):
         self.state_dim = 2
         self.action_dim = 4
-        self.action_bound = 1
+        self.action_bound = 1000
         self.std_bound = [1e-2, 1.0]
 
         self.global_actor = Actor(
@@ -183,7 +184,7 @@ class A3CWorker(Thread):
         self.env = realenv()
         self.state_dim = 2
         self.action_dim = 4
-        self.action_bound = 1
+        self.action_bound = 1000
         self.std_bound = [1e-2, 1.0]
 
         self.max_episodes = max_episodes

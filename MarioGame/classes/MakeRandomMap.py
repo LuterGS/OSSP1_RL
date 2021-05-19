@@ -11,7 +11,7 @@ Object : Pipe (x,height,1) height는 최대 9부터 최소 13까지만 조정 �
 
 class MakeRandomMap:
     def __init__(self):
-        self.not_exist = 10 # Start ~ not_exist, not_exist ~ End 까지는 아무것도 안 생김.( 엔티티 프리 )
+        self.not_exist = 5 # Start ~ not_exist, not_exist ~ End 까지는 아무것도 안 생김.( 엔티티 프리 )
         self.maximum_size = 320 # 맵 크기.
         self.data = OrderedDict()
         self.max_jump_height = 9 # 점프로 뛰어넘을 수 있는 블럭 높이.

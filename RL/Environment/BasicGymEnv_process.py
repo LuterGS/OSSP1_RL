@@ -38,16 +38,16 @@ class MultiMario(Process):
         self.menu = Menu(self.screen, self.dashboard, self.level, self.sound)
 
         print("init complete")
-
-        # 메뉴에서 게임 들어갈 때까지 메뉴 업데이트
-        ctr = 0
-        for i in range(2000):
-            self.menu.update()
-        # while not self.menu.start:
-        #     ctr += 1
+        #
+        # # 메뉴에서 게임 들어갈 때까지 메뉴 업데이트
+        # ctr = 0
+        # for i in range(2000):
         #     self.menu.update()
-        #     print(ctr)
-
+        # # while not self.menu.start:
+        # #     ctr += 1
+        # #     self.menu.update()
+        # #     print(ctr)
+        #
         # 1. 메뉴에서 게임 플레이로 들어감
         self.menu.key_input_status[4] = True
         self.menu.update()
@@ -55,12 +55,14 @@ class MultiMario(Process):
         # random map 들어가는 부분
         # self.menu.key_input_status[3] = True
         # self.menu.update()
+        # self.menu.key_input_status[3] = True
+        # self.menu.update()
 
         self.menu.key_input_status[4] = True
         self.menu.update()
 
-        self.menu.key_input_status[4] = True
-        self.menu.update()
+        # self.menu.key_input_status[4] = True
+        # self.menu.update()
 
         # 2. 게임 플레이에서 레벨 선택
         # self.menu.key_input_status[5] = True
@@ -100,6 +102,7 @@ class MultiMario(Process):
             False if action[1] < 0 else True,
             False if action[2] < 0 else True
         ]
+        print("Button pressed : ", button_pressed)
 
         # action을 토대로 game에 입력을 줌 (30FPS 기준으로 이 입력이 0.2초동안, 즉 6프레임만큼 유지된다고 가정하자
         #       -> 추후 변경 가능
@@ -128,9 +131,12 @@ class MultiMario(Process):
 
         # reward를 일단 먼저 측정하는데, 왼쪽으로 가면 마이너스, 오른쪽으로 가면 플러스를 주자
         if button_pressed[0]:
-            reward -= 0.5
+            reward -= 1
         else:
             reward += 0.5
+
+        if button_pressed[2]:
+            reward += 0.3
 
         # 만약 죽었으면, 마이너스를 주자
         if done:

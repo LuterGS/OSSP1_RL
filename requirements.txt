@@ -1,5 +1,5 @@
 pygame==2.0.0.dev10
 scipy==1.4.1
-tensorflow==2.3.0
+tensorflow==2.4.0
 opencv-python==4.5.2.52
 gym==0.18.0
