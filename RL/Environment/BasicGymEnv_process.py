@@ -59,6 +59,9 @@ class MultiMario(Process):
         self.menu.key_input_status[4] = True
         self.menu.update()
 
+        self.menu.key_input_status[4] = True
+        self.menu.update()
+
         # 2. 게임 플레이에서 레벨 선택
         # self.menu.key_input_status[5] = True
         # self.menu.update()
@@ -90,19 +93,13 @@ class MultiMario(Process):
     def step(self, action):
         # agent의 action 결과를 받는다.
         # Multi-Discrete 환경이라서 어떻게 받는지는 모르겠지만, 일단 4개 numpy array를 받는다고 가정하자.
-        # print("Action : ", action)
+        print("Action : ", action)
         button_pressed = [
-            True if action[0] < 0 else False,
-            True if action[0] >= 0 else False,
+            True if action[1] < action[0] else False,
+            True if action[1] > action[0] else False,
             False if action[1] < 0 else True,
             False if action[2] < 0 else True
         ]
-        # print(action)
-        # print("button : ", end=" ")
-        # for i in range(4):
-        #     if button_pressed[i]:
-        #         print(button_log[i] + ", ", end=" ")
-        # print("pressed\n")
 
         # action을 토대로 game에 입력을 줌 (30FPS 기준으로 이 입력이 0.2초동안, 즉 6프레임만큼 유지된다고 가정하자
         #       -> 추후 변경 가능
@@ -127,7 +124,19 @@ class MultiMario(Process):
 
         # 이후에 observation을 받아옴
         observation = ImgExtract.Capture(self.screen, cv2.COLOR_BGR2GRAY)
-        reward = -0.01  # 추후에 이미지 토대로 calculation 가능
+        reward = -0.1  # 추후에 이미지 토대로 calculation 가능
+
+        # reward를 일단 먼저 측정하는데, 왼쪽으로 가면 마이너스, 오른쪽으로 가면 플러스를 주자
+        if button_pressed[0]:
+            reward -= 0.5
+        else:
+            reward += 0.5
+
+        # 만약 죽었으면, 마이너스를 주자
+        if done:
+            reward -= 5
+
+        # print("reward : ", reward)
 
         # return
         return observation, reward, done, None

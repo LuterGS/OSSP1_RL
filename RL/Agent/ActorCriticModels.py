@@ -1,6 +1,8 @@
 import tensorflow as tf
 import tensorflow.keras.layers as layers
 
+model_size = (480, 640, )
+
 
 def Actor_Continuos_Default(state_dimension, action_dimension, action_bound):
 
@@ -15,7 +17,7 @@ def Actor_Continuos_Default(state_dimension, action_dimension, action_bound):
 
 def Actor_Continuos_IMG(state_dimension, action_dimension, action_bound):
 
-    inputs = layers.Input((state_dimension, ))
+    inputs = layers.Input((model_size, ))
     cnn_1 = layers.Conv2D(64, 10, activation='relu')(inputs)
     batch_norm = layers.BatchNormalization()(cnn_1)
     dropout = layers.Dropout(0.2)(batch_norm)
@@ -25,7 +27,7 @@ def Actor_Continuos_IMG(state_dimension, action_dimension, action_bound):
     flatten = layers.Flatten()(dropout)
     out_mu = layers.Dense(action_dimension, activation='relu')(flatten)
     mu_output = layers.Lambda(lambda x: x * action_bound)(out_mu)
-    std_output = layers.Dense(action_dimension, activation='softmax')(flatten)
+    std_output = layers.Dense(action_dimension, activation='relu')(flatten)
     return tf.keras.models.Model(inputs, [mu_output, std_output])
 
 
@@ -39,9 +41,9 @@ def Critic_Default(state_dimension):
     ])
 
 
-def Critic_CNN(state_dimension):
+def Critic_CNN():
     return tf.keras.Sequential([
-        layers.Input((state_dimension,)),
+        layers.Input((model_size,)),
         layers.Conv2D(64, 10, activation='relu'),
         layers.Dropout(0.2),
         layers.Conv2D(128, 8, activation='relu'),

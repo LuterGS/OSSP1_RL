@@ -8,18 +8,20 @@ from threading import Thread, Lock
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Input, Lambda, Flatten
+import tensorflow.keras.layers as layers
 
 from RL.Environment.BasicGymEnv_process import BasicEnv
 
-import signal
+FILE_LOC = os.path.dirname(os.path.abspath(__file__))
+print(FILE_LOC)
 
 realenv = BasicEnv
 
 tf.keras.backend.set_floatx("float64")
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--env", default="MountainCarContinuous-v0")
-parser.add_argument("--num-workers", default=4, type=int)
+parser.add_argument("--env", default="TEST")
+parser.add_argument("--num-workers", default=1, type=int)
 parser.add_argument("--actor-lr", type=float, default=0.001)
 parser.add_argument("--critic-lr", type=float, default=0.002)
 parser.add_argument("--update-interval", type=int, default=5)
@@ -47,14 +49,27 @@ class Actor:
         self.entropy_beta = 0.01
 
     def nn_model(self):
-        state_input = Input(shape=(480, 640, ))
-        state_input2 = Flatten()(state_input)
-        dense_1 = Dense(32, activation="relu")(state_input2)
-        dense_2 = Dense(32, activation="relu")(dense_1)
-        out_mu = Dense(self.action_dim, activation="tanh")(dense_2)
-        mu_output = Lambda(lambda x: x * self.action_bound)(out_mu)
-        std_output = Dense(self.action_dim, activation="softplus")(dense_2)
-        return tf.keras.models.Model(state_input, [mu_output, std_output])
+        # state_input = Input(shape=(480, 640, ))
+        # state_input2 = Flatten()(state_input)
+        # dense_1 = Dense(32, activation="relu")(state_input2)
+        # dense_2 = Dense(32, activation="relu")(dense_1)
+        # out_mu = Dense(self.action_dim, activation="tanh")(dense_2)
+        # mu_output = Lambda(lambda x: x * self.action_bound)(out_mu)
+        # std_output = Dense(self.action_dim, activation="softplus")(dense_2)
+        # return tf.keras.models.Model(state_input, [mu_output, std_output])
+
+        inputs = layers.Input((480, 640, 1,))
+        cnn_1 = layers.Conv2D(64, 5, activation='relu')(inputs)
+        batch_norm = layers.BatchNormalization()(cnn_1)
+        dropout = layers.Dropout(0.2)(batch_norm)
+        cnn_2 = layers.Conv2D(128, 3, activation='relu')(dropout)
+        batch_norm = layers.BatchNormalization()(cnn_2)
+        dropout = layers.Dropout(0.2)(batch_norm)
+        flatten = layers.Flatten()(dropout)
+        out_mu = layers.Dense(self.action_dim, activation='relu')(flatten)
+        mu_output = layers.Lambda(lambda x: x * self.action_bound)(out_mu)
+        std_output = layers.Dense(self.action_dim, activation='relu')(flatten)
+        return tf.keras.models.Model(inputs, [mu_output, std_output])
 
     def get_action(self, state):
         state = np.reshape(state, [1, 480, 640])
@@ -91,16 +106,27 @@ class Critic:
         self.opt = tf.keras.optimizers.Adam(args.critic_lr)
 
     def nn_model(self):
-        return tf.keras.Sequential(
-            [
-                Input((480, 640,)),
-                Flatten(),
-                Dense(32, activation="relu"),
-                Dense(32, activation="relu"),
-                Dense(16, activation="relu"),
-                Dense(1, activation="linear"),
-            ]
-        )
+        return tf.keras.Sequential([
+            layers.Input((480, 640, 1,)),
+            layers.Conv2D(64, 5, activation='relu'),
+            layers.Dropout(0.2),
+            layers.Conv2D(32, 3, activation='relu'),
+            layers.Dropout(0.2),
+            layers.Flatten(),
+            layers.Dense(50, activation='relu'),
+            layers.Dense(1, activation='linear')
+        ])
+
+        # return tf.keras.Sequential(
+        #     [
+        #         Input((480, 640,)),
+        #         Flatten(),
+        #         Dense(32, activation="relu"),
+        #         Dense(32, activation="relu"),
+        #         Dense(16, activation="relu"),
+        #         Dense(1, activation="linear"),
+        #     ]
+        # )
 
     def compute_loss(self, v_pred, td_targets):
         mse = tf.keras.losses.MeanSquaredError()
@@ -123,7 +149,7 @@ class Critic:
 class Agent:
     def __init__(self, env_name, num_workers=cpu_count()):
         self.state_dim = 2
-        self.action_dim = 3
+        self.action_dim = 4
         self.action_bound = 1
         self.std_bound = [1e-2, 1.0]
 
@@ -147,13 +173,16 @@ class Agent:
         for worker in workers:
             worker.join()
 
+        # self.global_actor.model.save(FILE_LOC + "/weights/actor")
+        # self.global_critic.model.save(FILE_LOC + "/weights/critic")
+
 
 class A3CWorker(Thread):
     def __init__(self, global_actor, global_critic, max_episodes, i):
         Thread.__init__(self)
         self.env = realenv()
         self.state_dim = 2
-        self.action_dim = 3
+        self.action_dim = 4
         self.action_bound = 1
         self.std_bound = [1e-2, 1.0]
 
@@ -203,7 +232,7 @@ class A3CWorker(Thread):
                 next_state, reward, done, _ = self.env.step(action)
 
                 state = np.reshape(state, [1, 480, 640])
-                action = np.reshape(action, [1, 3])
+                action = np.reshape(action, [1, 4])
                 next_state = np.reshape(next_state, [1, 480, 640])
                 reward = np.reshape(reward, [1, 1])
                 state_batch.append(state)
