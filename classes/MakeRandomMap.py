@@ -178,7 +178,7 @@ class MakeRandomMap:
     def make_Goomba(self):
         temp = []
         #빈 땅에 굼바 만들기.
-        how_many_Goomba = 20
+        how_many_Goomba = 0
         x = self.get_Random_X_Position(self.not_exist,self.maximum_size-self.not_exist,how_many_Goomba,delta=0)
         for item in x:
             temp.append([12,item])
@@ -186,7 +186,7 @@ class MakeRandomMap:
 
     def make_Koopa(self):
         temp=[]
-        how_many_Koopa = 20
+        how_many_Koopa = 0
         x = self.get_Random_X_Position(self.not_exist, self.maximum_size - self.not_exist, how_many_Koopa, delta=0)
         for item in x:
             temp.append([12, item])

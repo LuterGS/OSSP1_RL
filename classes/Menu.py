@@ -32,21 +32,10 @@ class Menu:
             yTileSize=88,
         )
 
-
     def update(self):
         self.chooseLevel()
         self.checkInput()
 
-        # if self.inChoosingLevel:
-        #     return
-        #
-        # self.drawMenuBackground()
-        # self.dashboard.update()
-        #
-        # if not self.inSettings:
-        #     self.drawMenu()
-        # else:
-        #     self.drawSettings()
 
     def drawMenuBackground(self, withBanner=True):
         for y in range(0, 13):
@@ -84,19 +73,6 @@ class Menu:
         )
         self.screen.blit(self.level.sprites.spriteCollection.get("goomba-1").image, (18.5 * 32, 12 * 32))
 
-    # def drawSettings(self):
-    #     self.drawDot()
-    #     self.dashboard.drawText("MUSIC", 180, 280, 24)
-    #     if self.music:
-    #         self.dashboard.drawText("ON", 340, 280, 24)
-    #     else:
-    #         self.dashboard.drawText("OFF", 340, 280, 24)
-    #     self.dashboard.drawText("SFX", 180, 320, 24)
-    #     if self.sfx:
-    #         self.dashboard.drawText("ON", 340, 320, 24)
-    #     else:
-    #         self.dashboard.drawText("OFF", 340, 320, 24)
-    #     self.dashboard.drawText("BACK", 180, 360, 24)
 
     def chooseLevel(self):
         self.drawMenuBackground(False)

@@ -1,5 +1,6 @@
 import pygame
 from classes.Dashboard import Dashboard
+from classes.MakeRandomMap import MakeRandomMap
 from classes.Level import Level
 from classes.Menu import Menu
 from classes.Sound import Sound
@@ -19,7 +20,9 @@ def main():
     sound = Sound()
     level = Level(screen, sound, dashboard)
     menu = Menu(screen, dashboard, level, sound)
+    MakeMap = MakeRandomMap()
 
+    MakeMap.write_Json()
     while not menu.start:
         menu.update()
 

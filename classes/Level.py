@@ -11,7 +11,7 @@ from entities.Koopa import Koopa
 from entities.CoinBox import CoinBox
 from entities.RandomBox import RandomBox
 
-from classes.MakeRandomMap import MakeRandomMap
+# from classes.MakeRandomMap import MakeRandomMap
 
 class Level:
     def __init__(self, screen, sound, dashboard):
@@ -22,11 +22,11 @@ class Level:
         self.level = None
         self.levelLength = 0
         self.entityList = []
-        self.MakeMap = MakeRandomMap()
+#        self.MakeMap = MakeRandomMap()
 
     def loadLevel(self, levelname):
         #Make brand-new Random map.
-        self.MakeMap.write_Json()
+ #       self.MakeMap.write_Json()
         with open("./levels/{}.json".format(levelname)) as jsonData:
             data = json.load(jsonData)
             self.loadLayers(data)

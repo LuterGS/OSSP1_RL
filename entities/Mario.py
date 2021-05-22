@@ -37,7 +37,7 @@ bigAnimation = Animation(
 class Mario(EntityBase):
     def __init__(self, x, y, level, screen, dashboard, sound, gravity=0.8):
         super(Mario, self).__init__(x, y, gravity)
-        self.camera = Camera(self.rect, self)
+        self.camera = Camera(self.rect, self,level.levelLength)
         self.sound = sound
         self.input = Input(self)
         self.inAir = False
@@ -60,14 +60,18 @@ class Mario(EntityBase):
         self.pauseObj = Pause(screen, self, dashboard)
 
     def update(self):
+#        print(self.rect.x)
         if self.invincibilityFrames > 0:
             self.invincibilityFrames -= 1
         self.updateTraits()
+        self.drawNowPosition()
         self.moveMario()
         self.camera.move()
         self.applyGravity()
         self.checkEntityCollision()
         self.input.checkForInput()
+        if (self.rect.x/32) == (self.levelObj.levelLength - 1):
+            self.gameClear()
 
     def moveMario(self):
         self.rect.y += self.vel.y
@@ -149,6 +153,14 @@ class Mario(EntityBase):
             ent.bouncing = False
         self.dashboard.points += 100
 
+    def drawNowPosition(self):
+        black=(0,0,0)
+        white=(255,255,255)
+        pygame.draw.rect(self.screen,black,[0,0,640,20])
+        pygame.draw.rect(self.screen,white,[0,0,((self.rect.x/32)/self.levelObj.levelLength)*640,20])
+        pygame.display.update()
+        print("???")
+
     def gameOver(self):
         srf = pygame.Surface((640, 480))
         srf.set_colorkey((255, 255, 255), pygame.RLEACCEL)
@@ -167,6 +179,12 @@ class Mario(EntityBase):
             self.screen.blit(srf, (0, 0))
             pygame.display.update()
             self.input.checkForInput()
+        while self.sound.music_channel.get_busy():
+            pygame.display.update()
+            self.input.checkForInput()
+        self.restart = True
+
+    def gameClear(self):
         while self.sound.music_channel.get_busy():
             pygame.display.update()
             self.input.checkForInput()
