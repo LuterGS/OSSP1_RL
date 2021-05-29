@@ -8,10 +8,10 @@ setup(
     console=["main.py"],
     # data files - these are the non-python files, like images and sounds
     data_files=[
-        ("sprites", glob.glob("sprites\\*.json")),
-        ("sfx", glob.glob("sfx\\*.ogg") + glob.glob("sfx\\*.wav")),
-        ("levels", glob.glob("levels\\*.json")),
-        ("img", glob.glob("img\\*.gif") + glob.glob("img\\*.png")),
+        ("sprites", glob.glob("Pygame/sprites\\*.json")),
+        ("sfx", glob.glob("Pygame/sfx\\*.ogg") + glob.glob("Pygame/sfx\\*.wav")),
+        ("levels", glob.glob("Pygame/levels\\*.json")),
+        ("img", glob.glob("Pygame/img\\*.gif") + glob.glob("Pygame/img\\*.png")),
         ("", ["settings.json"]),
     ],
 )
