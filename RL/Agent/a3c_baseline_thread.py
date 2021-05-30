@@ -21,7 +21,7 @@ tf.keras.backend.set_floatx("float64")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--env", default="TEST")
-parser.add_argument("--num-workers", default=4, type=int)
+parser.add_argument("--num-workers", default=2, type=int)
 parser.add_argument("--actor-lr", type=float, default=0.001)
 parser.add_argument("--critic-lr", type=float, default=0.002)
 parser.add_argument("--update-interval", type=int, default=5)
@@ -49,22 +49,10 @@ class Actor:
         self.entropy_beta = 0.01
 
     def nn_model(self):
-        # state_input = Input(shape=(480, 640, ))
-        # state_input2 = Flatten()(state_input)
-        # dense_1 = Dense(32, activation="relu")(state_input2)
-        # dense_2 = Dense(32, activation="relu")(dense_1)
-        # out_mu = Dense(self.action_dim, activation="tanh")(dense_2)
-        # mu_output = Lambda(lambda x: x * self.action_bound)(out_mu)
-        # std_output = Dense(self.action_dim, activation="softplus")(dense_2)
-        # return tf.keras.models.Model(state_input, [mu_output, std_output])
-
         inputs = layers.Input((480, 640, 1,))
         cnn_1 = layers.Conv2D(32, 3, strides=(3, 3), activation='relu')(inputs)
         batch_norm = layers.BatchNormalization()(cnn_1)
         dropout = layers.Dropout(0.2)(batch_norm)
-        # cnn_2 = layers.Conv2D(128, 3, activation='relu')(dropout)
-        # batch_norm = layers.BatchNormalization()(cnn_2)
-        # dropout = layers.Dropout(0.2)(batch_norm)
         flatten = layers.Flatten()(dropout)
         out_mu = layers.Dense(self.action_dim, activation='relu')(flatten)
         mu_output = layers.Lambda(lambda x: x * self.action_bound)(out_mu)
@@ -97,7 +85,6 @@ class Actor:
         grads = tape.gradient(loss, self.model.trainable_variables)
         self.opt.apply_gradients(zip(grads, self.model.trainable_variables))
         return loss
-
 
 class Critic:
     def __init__(self, state_dim):
@@ -145,27 +132,26 @@ class Critic:
         self.opt.apply_gradients(zip(grads, self.model.trainable_variables))
         return loss
 
-
-
-class Agent:
-    def __init__(self, env_name, num_workers=cpu_count()):
-        self.state_dim = 2
-        self.action_dim = 4
-        self.action_bound = 1000
+class A3C:
+    def __init__(self, env_func):
+        self.state_dim = 2 # 게임의 이미지 크기
+        self.action_dim = 4     # 4개
+        self.action_bound = 10
         self.std_bound = [1e-2, 1.0]
 
         self.global_actor = Actor(
             self.state_dim, self.action_dim, self.action_bound, self.std_bound
         )
         self.global_critic = Critic(self.state_dim)
-        self.num_workers = num_workers
+        self.num_workers = args.num_workers
+        self.env_func = env_func
 
-    def train(self, max_episodes=1000):
+    def train(self, max_episodes=10000):
         workers = []
 
         for i in range(self.num_workers):
             workers.append(
-                A3CWorker(self.global_actor, self.global_critic, max_episodes, i)
+                A3CWorker(self.env_func, self.global_actor, self.global_critic, max_episodes, i)
             )
 
         for worker in workers:
@@ -174,14 +160,14 @@ class Agent:
         for worker in workers:
             worker.join()
 
-        # self.global_actor.model.save(FILE_LOC + "/weights/actor")
-        # self.global_critic.model.save(FILE_LOC + "/weights/critic")
+        self.global_actor.model.save(FILE_LOC + "/weights/actor")
+        self.global_critic.model.save(FILE_LOC + "/weights/critic")
 
 
 class A3CWorker(Thread):
-    def __init__(self, global_actor, global_critic, max_episodes, i):
+    def __init__(self, envs, global_actor, global_critic, max_episodes, i):
         Thread.__init__(self)
-        self.env = realenv()
+        self.env = envs()
         self.state_dim = 2
         self.action_dim = 4
         self.action_bound = 1000
@@ -226,16 +212,18 @@ class A3CWorker(Thread):
             state = self.env.reset()
 
             while not done:
-                # self.env.render()
+                # 현재 상태로부터 취할 행동을 Actor로부터 얻어음
                 action = self.actor.get_action(state)
                 action = np.clip(action, -self.action_bound, self.action_bound)
 
+                # 얻어온 행동을 실제 Env에 작용, 다음 상태와 reward를 받아옴
                 next_state, reward, done, _ = self.env.step(action)
 
                 state = np.reshape(state, [1, 480, 640])
                 action = np.reshape(action, [1, 4])
                 next_state = np.reshape(next_state, [1, 480, 640])
                 reward = np.reshape(reward, [1, 1])
+                # 각 상태, 행동, 보상을 저장함
                 state_batch.append(state)
                 action_batch.append(action)
                 reward_batch.append(reward)
@@ -258,9 +246,9 @@ class A3CWorker(Thread):
                         self.global_critic.model.get_weights()
                     )
 
-                    state_batch = []
-                    action_batch = []
-                    reward_batch = []
+                    state_batch.clear()
+                    action_batch.clear()
+                    reward_batch.clear()
 
                 episode_reward += reward[0][0]
                 state = next_state[0]
@@ -274,5 +262,5 @@ class A3CWorker(Thread):
 
 if __name__ == "__main__":
     env_name = "Pendulum-v0"
-    agent = Agent(env_name, args.num_workers)
+    agent = A3C(env_name, args.num_workers)
     agent.train()
