@@ -42,6 +42,11 @@ class MultiMario(Process):
         self.MakeMap = MakeRandomMap()
 
         self.MakeMap.write_Json()
+        self.menu.button_pressed[3] = True
+        self.menu.update()
+
+        self.menu.button_pressed[3] = True
+        self.menu.update()
 
         while not self.menu.start:
             self.menu.update()
@@ -186,7 +191,7 @@ class BasicEnv(gym.Env):
         self.reset_value += 1
         self.ptoc_queue.put([2, action])
         value = self.ctop_queue.get()
-        if self.reset_value > 300:  # 1분동안 clear 못하면 reset
+        if self.reset_value > 150:  # 1분동안 clear 못하면 reset
             value = list(value)
             value[2] = True
             value = tuple(value)

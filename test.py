@@ -8,7 +8,7 @@ def discrete():
 
 def continuous():
     a3c = cA3C(BasicGymEnv_process.BasicEnv)
-    a3c.train()
+    a3c.train(max_episodes=100)
 
 if __name__ == "__main__":
     continuous()
