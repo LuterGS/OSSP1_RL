@@ -12,7 +12,6 @@ windowSize = 640, 480
 playCount = 0
 clearCount = 0
 
-
 def main():
     pygame.mixer.pre_init(44100, -16, 2, 4096)
     pygame.init()

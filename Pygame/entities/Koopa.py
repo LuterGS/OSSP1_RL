@@ -1,4 +1,4 @@
-import Pygame
+import pygame
 
 from Pygame.classes.Animation import Animation
 from Pygame.classes.Collider import Collider
@@ -45,7 +45,7 @@ class Koopa(EntityBase):
             )
         else:
             self.screen.blit(
-                Pygame.transform.flip(self.animation.image, True, False),
+                pygame.transform.flip(self.animation.image, True, False),
                 (self.rect.x + camera.x, self.rect.y - 32),
             )
 

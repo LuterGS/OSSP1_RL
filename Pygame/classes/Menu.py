@@ -36,6 +36,7 @@ class Menu:
         self.checkInput()
 
 
+
     def drawMenuBackground(self, withBanner=True):
         for y in range(0, 13):
             for x in range(0, 20):

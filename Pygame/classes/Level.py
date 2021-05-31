@@ -35,16 +35,51 @@ class Level:
             self.levelLength = data["length"]
 
     def loadEntities(self, data):
+        # try:
+        #     [self.addCoinBox(x, y) for x, y in data["level"]["entities"]["CoinBox"]]
+        # except:
+        #     print("error1")
+        #     pass
+
         try:
-            [self.addCoinBox(x, y) for x, y in data["level"]["entities"]["CoinBox"]]
             [self.addGoomba(x, y) for x, y in data["level"]["entities"]["Goomba"]]
+        except:
+            print("error2")
+            pass
+
+        try:
             [self.addKoopa(x, y) for x, y in data["level"]["entities"]["Koopa"]]
+        except:
+            print("error3")
+            pass
+
+        try:
             [self.addCoin(x, y) for x, y in data["level"]["entities"]["coin"]]
-            [self.addCoinBrick(x, y) for x, y in data["level"]["entities"]["coinBrick"]]
+        except:
+            print("error4")
+            pass
+        # try:
+        #     [self.addCoinBrick(x, y) for x, y in data["level"]["entities"]["coinBrick"]]
+        # except:
+        #     print("error5")
+        #     pass
+
+        try:
             [self.addRandomBox(x, y, item) for x, y, item in data["level"]["entities"]["RandomBox"]]
         except:
-            # if no entities in Level
-            print("Exceptions")
+            print("error6")
+            pass
+
+        # try:
+        #     [self.addCoinBox(x, y) for x, y in data["level"]["entities"]["CoinBox"]]
+        #     [self.addGoomba(x, y) for x, y in data["level"]["entities"]["Goomba"]]
+        #     [self.addKoopa(x, y) for x, y in data["level"]["entities"]["Koopa"]]
+        #     [self.addCoin(x, y) for x, y in data["level"]["entities"]["coin"]]
+        #     [self.addCoinBrick(x, y) for x, y in data["level"]["entities"]["coinBrick"]]
+        #     [self.addRandomBox(x, y, item) for x, y, item in data["level"]["entities"]["RandomBox"]]
+        # except:
+        #     # if no entities in Level
+        #     print("Exceptions")
             pass
 
     def loadLayers(self, data):
