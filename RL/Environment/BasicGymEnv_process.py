@@ -71,7 +71,7 @@ class MultiMario(Process):
         # 그 이후에 observation을 받아오고
         observation = ImgExtract.Capture(self.screen, cv2.COLOR_BGR2GRAY)
         # print(observation)
-        print("reset complete!")
+        # print("reset complete!")
 
         # return 해줄 것.
         return observation

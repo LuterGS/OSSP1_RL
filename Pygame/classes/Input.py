@@ -17,8 +17,6 @@ class Input:
         self.checkForQuitAndRestartInputEvents(events)
 
     def checkForKeyboardInput(self):
-        # pressedKeys = pygame.key.get_pressed()
-        # 왼쪽 키
         if self.button_pressed[0] and not self.button_pressed[1]:
             self.entity.traits["goTrait"].direction = -1
         elif self.button_pressed[1] and not self.button_pressed[0]:
@@ -28,10 +26,8 @@ class Input:
 
         self.entity.traits['jumpTrait'].jump(self.button_pressed[2])
         self.entity.traits['goTrait'].boost = self.button_pressed[3]
-
-        # self.button_pressed = [False, False, False, False]
-
-
+        # pressedKeys = pygame.key.get_pressed()
+        #
         # if pressedKeys[K_LEFT] or pressedKeys[K_h] and not pressedKeys[K_RIGHT]:
         #     self.entity.traits["goTrait"].direction = -1
         # elif pressedKeys[K_RIGHT] or pressedKeys[K_l] and not pressedKeys[K_LEFT]:

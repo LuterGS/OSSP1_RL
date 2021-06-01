@@ -35,16 +35,51 @@ class Level:
             self.levelLength = data["length"]
 
     def loadEntities(self, data):
+        # try:
+        #     [self.addCoinBox(x, y) for x, y in data["level"]["entities"]["CoinBox"]]
+        # except:
+        #     print("error1")
+        #     pass
+
         try:
-            [self.addCoinBox(x, y) for x, y in data["level"]["entities"]["CoinBox"]]
             [self.addGoomba(x, y) for x, y in data["level"]["entities"]["Goomba"]]
+        except:
+            print("error2")
+            pass
+
+        try:
             [self.addKoopa(x, y) for x, y in data["level"]["entities"]["Koopa"]]
+        except:
+            print("error3")
+            pass
+
+        try:
             [self.addCoin(x, y) for x, y in data["level"]["entities"]["coin"]]
-            [self.addCoinBrick(x, y) for x, y in data["level"]["entities"]["coinBrick"]]
+        except:
+            print("error4")
+            pass
+        # try:
+        #     [self.addCoinBrick(x, y) for x, y in data["level"]["entities"]["coinBrick"]]
+        # except:
+        #     print("error5")
+        #     pass
+
+        try:
             [self.addRandomBox(x, y, item) for x, y, item in data["level"]["entities"]["RandomBox"]]
         except:
-            # if no entities in Level
-            print("Exceptions")
+            print("error6")
+            pass
+
+        # try:
+        #     [self.addCoinBox(x, y) for x, y in data["level"]["entities"]["CoinBox"]]
+        #     [self.addGoomba(x, y) for x, y in data["level"]["entities"]["Goomba"]]
+        #     [self.addKoopa(x, y) for x, y in data["level"]["entities"]["Koopa"]]
+        #     [self.addCoin(x, y) for x, y in data["level"]["entities"]["coin"]]
+        #     [self.addCoinBrick(x, y) for x, y in data["level"]["entities"]["coinBrick"]]
+        #     [self.addRandomBox(x, y, item) for x, y, item in data["level"]["entities"]["RandomBox"]]
+        # except:
+        #     # if no entities in Level
+        #     print("Exceptions")
             pass
 
     def loadLayers(self, data):
@@ -72,22 +107,26 @@ class Level:
             for x, y in data["level"]["objects"]["bush"]:
                 self.addBushSprite(x, y)
         except:
-            print("NoBush")
+            # print("NoBush")
+            pass
         try:
             for x, y in data["level"]["objects"]["cloud"]:
                 self.addCloudSprite(x, y)
         except:
-            print("No Clouds")
+            # print("No Clouds")
+            pass
         try:
             for x, y, z in data["level"]["objects"]["pipe"]:
                 self.addPipeSprite(x, y, z)
         except:
-            print("No Pipe")
+            pass
+            # print("No Pipe")
         try:
             for x, y in data["level"]["objects"]["sky"]:
                 self.level[y][x] = Tile(self.sprites.spriteCollection.get("sky"), None)
         except:
-            print("No Sky")
+            # print("No Sky")
+            pass
         try:
             for x, y in data["level"]["objects"]["ground"]:
                 self.level[y][x] = Tile(
@@ -95,7 +134,8 @@ class Level:
                     pygame.Rect(x * 32, y * 32, 32, 32),
                 )
         except:
-            print("NoGround.")
+            pass
+            # print("NoGround.")
 
     def updateEntities(self, cam):
         for entity in self.entityList:

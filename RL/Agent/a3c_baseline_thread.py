@@ -21,7 +21,7 @@ tf.keras.backend.set_floatx("float64")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--env", default="TEST")
-parser.add_argument("--num-workers", default=4, type=int)
+parser.add_argument("--num-workers", default=2, type=int)
 parser.add_argument("--actor-lr", type=float, default=0.001)
 parser.add_argument("--critic-lr", type=float, default=0.002)
 parser.add_argument("--update-interval", type=int, default=5)
@@ -202,7 +202,7 @@ class A3CWorker(Thread):
 
     def train(self):
         global GLOBAL_EPISODE_NUM
-        print("finally reached here!")
+        # print("finally reached here!")
         while self.max_episodes >= GLOBAL_EPISODE_NUM:
             state_batch = []
             action_batch = []

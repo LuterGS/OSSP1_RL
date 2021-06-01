@@ -30,11 +30,12 @@ class Menu:
             xTileSize=180,
             yTileSize=88,
         )
-        self.button_pressed = [False, False, False, False, False]  # 상 하 좌 우 엔터
+        self.button_pressed = [False, False, False, False, False] # 상하좌우엔터
 
     def update(self):
         self.chooseLevel()
         self.checkInput()
+
 
 
     def drawMenuBackground(self, withBanner=True):
@@ -127,8 +128,8 @@ class Menu:
         #             pygame.quit()
         #             sys.exit()
         if self.button_pressed[0]:
-        # elif event.key == pygame.K_UP or event.key == pygame.K_k:
-            print("Up BTN")
+        #elif event.key == pygame.K_UP or event.key == pygame.K_k:
+            # print("Up BTN")
             if self.inChoosingLevel:
                 if self.currSelectedLevel > 3:
                     self.currSelectedLevel -= 3
@@ -137,7 +138,7 @@ class Menu:
                 self.state -= 1
         elif self.button_pressed[1]:
         # elif event.key == pygame.K_DOWN or event.key == pygame.K_j:
-            print("Down BTN")
+        #     print("Down BTN")
             if self.inChoosingLevel:
                 if self.currSelectedLevel + 3 <= self.levelCount:
                     self.currSelectedLevel += 3
@@ -146,19 +147,19 @@ class Menu:
                 self.state += 1
         elif self.button_pressed[2]:
         # elif event.key == pygame.K_LEFT or event.key == pygame.K_h:
-            print("Left BTN")
+        #     print("Left BTN")
             if self.currSelectedLevel > 1:
                 self.currSelectedLevel -= 1
                 self.drawLevelChooser()
         elif self.button_pressed[3]:
         # elif event.key == pygame.K_RIGHT or event.key == pygame.K_l:
-            print("Right BTN")
+        #     print("Right BTN")
             if self.currSelectedLevel < self.levelCount:
                 self.currSelectedLevel += 1
                 self.drawLevelChooser()
         elif self.button_pressed[4]:
         # elif event.key == pygame.K_RETURN:
-            print("Return BTN")
+        #     print("Return BTN")
             if self.inChoosingLevel:
                 self.inChoosingLevel = False
                 self.dashboard.state = "start"
@@ -167,6 +168,5 @@ class Menu:
                 self.dashboard.levelName = self.levelNames[self.currSelectedLevel - 1].split("Level")[1]
                 self.start = True
                 return
-
+        self.button_pressed = [False, False, False, False, False]
         pygame.display.update()
-        self.button_pressed = [False, False, False, False, False]  # 상 하 좌 우 엔터

@@ -4,6 +4,7 @@ import pygame.image
 import cv2
 
 def Capture(screen,scales):
+    # if fps % Captured_fps == 0:
     screencopy = screen.copy()
     imgdata = pygame.surfarray.array3d(screencopy)
     imgdata = cv2.cvtColor(imgdata,scales)
