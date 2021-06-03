@@ -34,19 +34,19 @@ class MultiMario(Process):
         pygame.mixer.pre_init(44100, -16, 2, 4096)
         pygame.init()
         self.screen = pygame.display.set_mode(self.window_size)
-        self.max_frame_rate = 30
-        self.dashboard = Dashboard("/home/lutergs/Development/OSS2021/TermProject/OSSP1_RL/Pygame/img/font.png", 8, self.screen)
+        self.max_frame_rate = 60
+        self.dashboard = Dashboard("./Pygame/img/font.png", 8, self.screen)
         self.sound = Sound()
         self.level = Level(self.screen, self.sound, self.dashboard)
         self.menu = Menu(self.screen, self.dashboard, self.level, self.sound)
         self.MakeMap = MakeRandomMap()
 
         self.MakeMap.write_Json()
-        self.menu.button_pressed[3] = True
-        self.menu.update()
+        # self.menu.button_pressed[3] = True
+        # self.menu.update()
 
-        self.menu.button_pressed[3] = True
-        self.menu.update()
+        # self.menu.button_pressed[3] = True
+        # self.menu.update()
 
         while not self.menu.start:
             self.menu.update()
@@ -69,7 +69,7 @@ class MultiMario(Process):
             self.clock.tick(self.max_frame_rate)
 
         # 그 이후에 observation을 받아오고
-        observation = ImgExtract.Capture(self.screen, cv2.COLOR_BGR2GRAY)
+        observation = np.reshape(ImgExtract.Capture(self.screen, cv2.COLOR_BGR2GRAY), [480,  640, 1])
         # print(observation)
         # print("reset complete!")
 
@@ -80,22 +80,27 @@ class MultiMario(Process):
         # agent의 action 결과를 받는다.
         # Multi-Discrete 환경이라서 어떻게 받는지는 모르겠지만, 일단 4개 numpy array를 받는다고 가정하자.
         # print("Action : ", action)
-        button_pressed = [
-            True if action[1] <= action[0] else False,
-            True if action[1] > action[0] else False,
-            False if action[2] < 0 else True,
-            False if action[3] < 0 else True
-        ]
-        # print("Button pressed : ", button_pressed)
+        if action[0] == action[1]:
+            self.mario.input.button_pressed[0] = False
+            self.mario.input.button_pressed[1] = False
+        elif action[0] and not action[1]:
+            self.mario.input.button_pressed[0] = True
+            self.mario.input.button_pressed[1] = False
+        elif action[1] and not action[0]:
+            self.mario.input.button_pressed[0] = False
+            self.mario.input.button_pressed[1] = True
+        self.mario.input.button_pressed[2] = False if not action[2] else True
+        self.mario.input.button_pressed[3] = False if not action[3] else True
+
+        # print("Button pressed : ", self.mario.input.button_pressed)
 
         # action을 토대로 game에 입력을 줌 (30FPS 기준으로 이 입력이 0.2초동안, 즉 6프레임만큼 유지된다고 가정하자
         #       -> 추후 변경 가능
 
         done = False
-        self.mario.input.button_pressed = button_pressed
 
         # 입력을 기반으로 게임 진행
-        for i in range(6):
+        for i in range(12):
             if self.mario.restart:
                 done = True
                 break
@@ -109,33 +114,33 @@ class MultiMario(Process):
             pygame.display.update()
             self.clock.tick(self.max_frame_rate)
 
-        if self.mario.clear == True:
+        if self.mario.clear:
             done = True
-            reward = 100
+            reward = 300
             observation = ImgExtract.Capture(self.screen, cv2.COLOR_BGR2GRAY)
             return observation, reward, done, None
 
         # 이후에 observation을 받아옴
-        observation = ImgExtract.Capture(self.screen, cv2.COLOR_BGR2GRAY)
-        reward = -2  # 추후에 이미지 토대로 calculation 가능
+        observation = np.reshape(ImgExtract.Capture(self.screen, cv2.COLOR_BGR2GRAY), [480,  640, 1])
+        reward = -1  # 추후에 이미지 토대로 calculation 가능
 
         # reward를 일단 먼저 측정하는데, 왼쪽으로 가면 마이너스, 오른쪽으로 가면 플러스를 주자
-        if button_pressed[0]:
+        if self.mario.input.button_pressed[0]:
             reward -= 0.5
-        else:
-            reward += 0.5
+        elif self.mario.input.button_pressed[1]:
+            reward += 2
 
-        if button_pressed[2]:
-            reward += 0.5
+        # if self.mario.input.button_pressed[2]:
+        #     reward += 0.5
 
         # 만약 죽었으면, 마이너스를 주자
-        if done:
-            reward -= 20
+        # if done:
+        #     reward -= 120
 
         # print("reward : ", reward)
 
         # return
-        return observation, reward, done, None
+        return observation, reward, done, {'location': 'None'}
 
     def program_run(self):
 
@@ -154,24 +159,12 @@ class MultiMario(Process):
 class BasicEnv(gym.Env):
     """Custom environment Basic code"""
     metadata = {"render.modes": ["human"]}
+    action_space = spaces.MultiDiscrete([2, 2, 2, 2])
+    observation_space = spaces.Box(low=0, high=255, shape=(480, 640, 1), dtype=np.uint8)
+    reward_range = (-float(300), float(300))
 
     def __init__(self):
         super(BasicEnv, self).__init__()
-
-        # 보상값을 설정함
-        self.reward_range = (0, 1)
-        # env.reward_range. 했을 때 출력하는 결과. reward를 조정함에 있어 이것도 변경해주는것이 좋음
-
-        # 움직일 수 있는 방향을 의미함
-        # https://github.com/LuterGS/OSSP1_RL/blob/Pygame/classes/Input.py 의 방향을 참고함.
-        self.action_space = spaces.MultiDiscrete([1, 1, 1, 1])
-        # 각각 좌,우 / 점프 / 가속을 의미함
-
-        # 볼 수 있는 환경을 의미함
-        self.observation_space = spaces.Box(low=0, high=255, shape=(480, 640, ), dtype=np.int)
-        # 최대/최소값이 1/0으로 정규화된 3차원 numpy array를 입력으로 받음, 현재 row, col은 123인데, 게임 보고 변경해야할듯
-
-        self.reset_value = 0
 
         # Process간 통신을 위한 Queue 설정
         self.ptoc_queue = Queue()
@@ -191,9 +184,10 @@ class BasicEnv(gym.Env):
         self.reset_value += 1
         self.ptoc_queue.put([2, action])
         value = self.ctop_queue.get()
-        if self.reset_value > 150:  # 1분동안 clear 못하면 reset
+        if self.reset_value > 125:  # 1분동안 clear 못하면 reset
             value = list(value)
             value[2] = True
+            # value[1] -= 120      # 못깼을때도 죽은거랑 동일한 보상 제공
             value = tuple(value)
             self.reset_value = 0
         # return 큐 값, done

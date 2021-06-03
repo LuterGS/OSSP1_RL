@@ -21,11 +21,11 @@ tf.keras.backend.set_floatx("float64")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--env", default="TEST")
-parser.add_argument("--num-workers", default=2, type=int)
-parser.add_argument("--actor-lr", type=float, default=0.001)
-parser.add_argument("--critic-lr", type=float, default=0.002)
+parser.add_argument("--num-workers", default=6, type=int)
+parser.add_argument("--actor-lr", type=float, default=0.01)
+parser.add_argument("--critic-lr", type=float, default=0.02)
 parser.add_argument("--update-interval", type=int, default=5)
-parser.add_argument("--gamma", type=float, default=0.99)
+parser.add_argument("--gamma", type=float, default=0.98)
 parser.add_argument("--logdir", default="logs")
 
 args = parser.parse_args()
@@ -36,6 +36,7 @@ print(f"Saving training logs to:{logdir}")
 writer = tf.summary.create_file_writer(logdir)
 
 GLOBAL_EPISODE_NUM = 0
+locks = Lock()
 
 
 class Actor:
@@ -54,7 +55,7 @@ class Actor:
         batch_norm = layers.BatchNormalization()(cnn_1)
         dropout = layers.Dropout(0.2)(batch_norm)
         flatten = layers.Flatten()(dropout)
-        out_mu = layers.Dense(self.action_dim, activation='relu')(flatten)
+        out_mu = layers.Dense(self.action_dim, activation='sigmoid')(flatten)
         mu_output = layers.Lambda(lambda x: x * self.action_bound)(out_mu)
         std_output = layers.Dense(self.action_dim, activation='relu')(flatten)
         return tf.keras.models.Model(inputs, [mu_output, std_output])
@@ -94,7 +95,7 @@ class Critic:
 
     def nn_model(self):
         return tf.keras.Sequential([
-            layers.Input(shape=(480, 640, )),
+            layers.InputLayer(input_shape=(480, 640, )),
             layers.Reshape((480, 640, 1, )),
             layers.Conv2D(64, 10, strides=(10, 10,), activation='relu'),
             layers.Dropout(0.2),
@@ -160,9 +161,22 @@ class A3C:
         for worker in workers:
             worker.join()
 
-        self.global_actor.model.save(FILE_LOC + "/weights/actor")
-        self.global_critic.model.save(FILE_LOC + "/weights/critic")
+        self.save_model()
+        print("Done Training")
 
+    def save_model(self):
+        print("reached Here!")
+        date = datetime.now().strftime("%Y%M%d%H%M")
+        actor = self.global_actor.model.get_weights()
+        critic = self.global_critic.model.get_weights()
+        np.save("./weights/" + date + "_actor", actor, allow_pickle=True)
+        np.save("./weights/" + date + "_critic", critic, allow_pickle=True)
+
+    def load_model(self, date_str):
+        actor = np.load("./weights/" + date_str + "_actor.npy", allow_pickle=True)
+        critic = np.load("./weights/" + date_str + "_critic.npy", allow_pickle=True)
+        self.global_actor.model.set_weights(actor)
+        self.global_critic.model.set_weights(critic)
 
 class A3CWorker(Thread):
     def __init__(self, envs, global_actor, global_critic, max_episodes, i):
@@ -170,7 +184,7 @@ class A3CWorker(Thread):
         self.env = envs()
         self.state_dim = 2
         self.action_dim = 4
-        self.action_bound = 1000
+        self.action_bound = 1
         self.std_bound = [1e-2, 1.0]
 
         self.max_episodes = max_episodes
@@ -185,6 +199,15 @@ class A3CWorker(Thread):
         self.critic.model.set_weights(self.global_critic.model.get_weights())
 
         self.nums = i
+
+
+    def save_model(self, number):
+        print("reached Here!")
+        date = datetime.now().strftime("%Y%M%d%H%M")
+        actor = self.global_actor.model.get_weights()
+        critic = self.global_critic.model.get_weights()
+        np.save("./weights/" + date + "_" + str(number) + "_actor", actor, allow_pickle=True)
+        np.save("./weights/" + date + "_" + str(number) + "_critic", critic, allow_pickle=True)
 
     def n_step_td_target(self, rewards, next_v_value, done):
         td_targets = np.zeros_like(rewards)
@@ -238,6 +261,7 @@ class A3CWorker(Thread):
                     )
                     advantages = td_targets - self.critic.model.predict(states)
 
+                    locks.acquire()
                     actor_loss = self.global_actor.train(states, actions, advantages)
                     critic_loss = self.global_critic.train(states, td_targets)
 
@@ -249,13 +273,19 @@ class A3CWorker(Thread):
                     state_batch.clear()
                     action_batch.clear()
                     reward_batch.clear()
+                    locks.release()
 
                 episode_reward += reward[0][0]
                 state = next_state[0]
 
             print(f"Episode#{GLOBAL_EPISODE_NUM} on Thread:{self.nums},  Reward:{episode_reward}")
             tf.summary.scalar("episode_reward", episode_reward, step=GLOBAL_EPISODE_NUM)
+            locks.acquire()
             GLOBAL_EPISODE_NUM += 1
+            if GLOBAL_EPISODE_NUM % 20 == 0:
+                self.save_model(GLOBAL_EPISODE_NUM)
+            locks.release()
+        print(f"Thread:{self.nums} finished")
 
     def run(self):
         self.train()

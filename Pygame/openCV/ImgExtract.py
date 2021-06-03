@@ -10,5 +10,5 @@ def Capture(screen,scales):
     imgdata = cv2.cvtColor(imgdata,scales)
     imgdata = cv2.flip(imgdata,1)
     imgdata = cv2.rotate(imgdata,cv2.ROTATE_90_COUNTERCLOCKWISE)
-    cv2.imshow('window',imgdata)
+    # cv2.imshow('window',imgdata)
     return imgdata

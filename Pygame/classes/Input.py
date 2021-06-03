@@ -18,10 +18,13 @@ class Input:
 
     def checkForKeyboardInput(self):
         if self.button_pressed[0] and not self.button_pressed[1]:
+            # print("left")
             self.entity.traits["goTrait"].direction = -1
         elif self.button_pressed[1] and not self.button_pressed[0]:
+            # print("right")
             self.entity.traits["goTrait"].direction = 1
         else:
+            # print("none")
             self.entity.traits['goTrait'].direction = 0
 
         self.entity.traits['jumpTrait'].jump(self.button_pressed[2])
