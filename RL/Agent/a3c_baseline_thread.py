@@ -134,7 +134,7 @@ class Critic:
         return loss
 
 class A3C:
-    def __init__(self, env_func):
+    def __init__(self, env_func, num_workers):
         self.state_dim = 2 # 게임의 이미지 크기
         self.action_dim = 4     # 4개
         self.action_bound = 10
@@ -144,7 +144,7 @@ class A3C:
             self.state_dim, self.action_dim, self.action_bound, self.std_bound
         )
         self.global_critic = Critic(self.state_dim)
-        self.num_workers = args.num_workers
+        self.num_workers = num_workers
         self.env_func = env_func
 
     def train(self, max_episodes=10000):
