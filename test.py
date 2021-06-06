@@ -9,7 +9,7 @@ def discrete():
     a3c.train()
 
 def continuous():
-    a3c = cA3C(BasicGymEnv_process.BasicEnv)
+    a3c = cA3C(BasicGymEnv_process.BasicEnv, 4)
     # a3c.load_model("202117012017_180")
     a3c.train(max_episodes=1000)
 

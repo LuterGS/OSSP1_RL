@@ -42,11 +42,11 @@ class MultiMario(Process):
         self.MakeMap = MakeRandomMap()
 
         self.MakeMap.write_Json()
-        # self.menu.button_pressed[3] = True
-        # self.menu.update()
+        self.menu.button_pressed[3] = True
+        self.menu.update()
 
-        # self.menu.button_pressed[3] = True
-        # self.menu.update()
+        self.menu.button_pressed[3] = True
+        self.menu.update()
 
         while not self.menu.start:
             self.menu.update()
@@ -83,14 +83,14 @@ class MultiMario(Process):
         if action[0] == action[1]:
             self.mario.input.button_pressed[0] = False
             self.mario.input.button_pressed[1] = False
-        elif action[0] and not action[1]:
+        elif action[0] > action[1]:
             self.mario.input.button_pressed[0] = True
             self.mario.input.button_pressed[1] = False
-        elif action[1] and not action[0]:
+        elif action[1] < action[0]:
             self.mario.input.button_pressed[0] = False
             self.mario.input.button_pressed[1] = True
-        self.mario.input.button_pressed[2] = False if not action[2] else True
-        self.mario.input.button_pressed[3] = False if not action[3] else True
+        self.mario.input.button_pressed[2] = False if action[2] < 0.5 else True
+        self.mario.input.button_pressed[3] = False if action[3] < 0.5 else True
 
         # print("Button pressed : ", self.mario.input.button_pressed)
 
