@@ -16,6 +16,6 @@ if __name__ == "__main__":
     env = make_vec_env(BasicEnv, n_envs=2)
 
     model = PPO("CnnPolicy", env, verbose=1)
-    model.learn(total_timesteps=25000)
+    model.learn(total_timesteps=2500)
     model.save("test2")
 

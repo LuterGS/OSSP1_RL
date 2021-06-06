@@ -17,6 +17,7 @@ class Input:
         self.checkForQuitAndRestartInputEvents(events)
 
     def checkForKeyboardInput(self):
+        # print(self.button_pressed)
         if self.button_pressed[0] and not self.button_pressed[1]:
             # print("left")
             self.entity.traits["goTrait"].direction = -1

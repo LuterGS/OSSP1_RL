@@ -86,7 +86,7 @@ class MultiMario(Process):
         elif action[0] > action[1]:
             self.mario.input.button_pressed[0] = True
             self.mario.input.button_pressed[1] = False
-        elif action[1] < action[0]:
+        elif action[1] > action[0]:
             self.mario.input.button_pressed[0] = False
             self.mario.input.button_pressed[1] = True
         self.mario.input.button_pressed[2] = False if action[2] < 0.5 else True
