@@ -34,12 +34,14 @@ class MultiMario(Process):
         pygame.mixer.pre_init(44100, -16, 2, 4096)
         pygame.init()
         self.screen = pygame.display.set_mode(self.window_size)
-        self.max_frame_rate = 60
+        self.max_frame_rate = 30
         self.dashboard = Dashboard("./Pygame/img/font.png", 8, self.screen)
         self.sound = Sound()
         self.level = Level(self.screen, self.sound, self.dashboard)
         self.menu = Menu(self.screen, self.dashboard, self.level, self.sound)
         self.MakeMap = MakeRandomMap()
+
+
 
         self.MakeMap.write_Json()
         self.menu.button_pressed[3] = True
@@ -68,37 +70,35 @@ class MultiMario(Process):
             pygame.display.update()
             self.clock.tick(self.max_frame_rate)
 
+        self.time = self.dashboard.time
+        self.pos_percent = (self.mario.rect.x / 32) / self.mario.levelObj.levelLength
+
         # 그 이후에 observation을 받아오고
         observation = np.reshape(ImgExtract.Capture(self.screen, cv2.COLOR_BGR2GRAY), [480,  640, 1])
-        # print(observation)
-        # print("reset complete!")
 
         # return 해줄 것.
         return observation
 
     def step(self, action):
+
+        reward = 0
+
         # agent의 action 결과를 받는다.
-        # Multi-Discrete 환경이라서 어떻게 받는지는 모르겠지만, 일단 4개 numpy array를 받는다고 가정하자.
-        # print("Action : ", action)
-
-        reward = -1
-
+        # action의 결과를 토대로 게임의 입력값을 결정한다.
         if action[0] == action[1]:
-            reward -= 0.7
             self.mario.input.button_pressed[0] = False
             self.mario.input.button_pressed[1] = False
+            reward -= 3
         elif action[0] > action[1]:
-            reward -= 1
             self.mario.input.button_pressed[0] = True
             self.mario.input.button_pressed[1] = False
+            reward -= 10
         elif action[1] > action[0]:
-            reward += 2
             self.mario.input.button_pressed[0] = False
             self.mario.input.button_pressed[1] = True
+            reward += 20
         self.mario.input.button_pressed[2] = False if action[2] < 0.5 else True
         self.mario.input.button_pressed[3] = False if action[3] < 0.5 else True
-
-        # print("Button pressed : ", self.mario.input.button_pressed)
 
         # action을 토대로 game에 입력을 줌 (30FPS 기준으로 이 입력이 0.2초동안, 즉 6프레임만큼 유지된다고 가정하자
         #       -> 추후 변경 가능
@@ -106,7 +106,7 @@ class MultiMario(Process):
         done = False
 
         # 입력을 기반으로 게임 진행
-        for i in range(20):
+        for i in range(6):
             if self.mario.restart:
                 done = True
                 break
@@ -119,32 +119,61 @@ class MultiMario(Process):
                 self.mario.update()
             pygame.display.update()
             self.clock.tick(self.max_frame_rate)
+        reward = 0
 
+        # 게임을 클리어하지 못하고 죽었을 때
         if not self.mario.clear and done:
-            reward -= 50
+
+            # 차등 보상 적용
+            pos_percent = (self.mario.rect.x / 32) / self.mario.levelObj.levelLength
+            reward -= 200 * (1-pos_percent)
+
+            # 다음값 관측
             observation = self.reset()
             return observation, reward, False, None
 
-        if self.mario.clear and done:
+        # 게임을 클리어했을 때
+        if self.mario.clear:
             done = True
-            reward = 300
+            reward = 3000
             observation = ImgExtract.Capture(self.screen, cv2.COLOR_BGR2GRAY)
             return observation, reward, done, None
 
+        # 현재 시간과 위치를 측정
+        time = self.dashboard.time
+        pos_percent = (self.mario.rect.x / 32) / self.mario.levelObj.levelLength
+
+        # 기존의 위치랑 비교해 잘 진행했는지 비교
+        mov_diff = pos_percent - self.pos_percent
+        # print(pos_percent, self.pos_percent)
+
+        # # reward 1. 거리를 토대로 더 앞으로 갔으면 +, 뒤로 갔으면 - 제공
+        # if mov_diff < 0:
+        #     reward -= 0.5
+        # if mov_diff > 0:
+        #     reward += 10000
+        # if mov_diff == 0:
+        #     reward -= 0.3
+
+        # 20초를 클리어 기준으로 삼을 때
+        # 넉넉하게, 4초씩 끊어서 판단함 (5개 분류, 20%)
+        if 0 <= time < 4:
+            pass
+        elif 4 <= time < 8 and pos_percent < 20:
+            reward -= 20
+        elif 8 < time <= 12 and pos_percent < 40:
+            reward -= 20
+        elif 12 < time <= 16 and pos_percent < 60:
+            reward -= 20
+        elif 16 < time <= 20 and pos_percent < 80:
+            reward -= 20
+
+        self.time = time
+        self.pos_percent = pos_percent
+
         # 이후에 observation을 받아옴
         observation = np.reshape(ImgExtract.Capture(self.screen, cv2.COLOR_BGR2GRAY), [480,  640, 1])
-
-        # if self.mario.input.button_pressed[2]:
-        #     reward += 0.5
-
-        # 만약 죽었으면, 마이너스를 주자
-        # if done:
-        #     reward -= 120
-
-        # print("reward : ", reward)
-
-        # return
-        return observation, reward, done, {'location': 'None'}
+        return observation, reward, done, pos_percent
 
     def program_run(self):
 
@@ -191,11 +220,11 @@ class BasicEnv(gym.Env):
         if self.reset_value > 100:  # 20초동안 clear 못하면 reset
             value = list(value)
             value[2] = True
-            value[1] -= 50      # 못깼을때도 죽은거랑 동일한 보상 제공
+            value[1] -= 200 * (1-value[3])      # 못깼을때도 죽은거랑 동일한 보상 제공
             value = tuple(value)
             self.reset_value = 0
         # return 큐 값, done
-        return value
+        return value[0], value[1], value[2], {"location": "None"}
 
     def reward(self, observation):
         reward = 0

@@ -17,7 +17,7 @@ def main():
     pygame.mixer.pre_init(44100, -16, 2, 4096)
     pygame.init()
     screen = pygame.display.set_mode(windowSize)
-    max_frame_rate = 60
+    max_frame_rate = 30
     dashboard = Dashboard("Pygame/img/font.png", 8, screen)
     sound = Sound()
     level = Level(screen, sound, dashboard)
@@ -35,7 +35,7 @@ def main():
     print("pc",playCount)
     fps = 0
     while not mario.restart:
-        if fps == 60: fps = 0
+        if fps == 30: fps = 0
         # image Capture
         ImgExtract.Capture(screen, fps, 5, cv2.COLOR_BGR2GRAY)
         pygame.display.set_caption("Super Mario running with {:d} FPS".format(int(clock.get_fps())))

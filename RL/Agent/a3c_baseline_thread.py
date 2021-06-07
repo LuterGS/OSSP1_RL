@@ -55,7 +55,7 @@ class Actor:
         batch_norm = layers.BatchNormalization()(cnn_1)
         dropout = layers.Dropout(0.2)(batch_norm)
         flatten = layers.Flatten()(dropout)
-        out_mu = layers.Dense(self.action_dim, activation='sigmoid')(flatten)
+        out_mu = layers.Dense(self.action_dim, activation='relu')(flatten)
         mu_output = layers.Lambda(lambda x: x * self.action_bound)(out_mu)
         std_output = layers.Dense(self.action_dim, activation='relu')(flatten)
         return tf.keras.models.Model(inputs, [mu_output, std_output])
@@ -184,7 +184,7 @@ class A3CWorker(Thread):
         self.env = envs()
         self.state_dim = 2
         self.action_dim = 4
-        self.action_bound = 1
+        self.action_bound = 10
         self.std_bound = [1e-2, 1.0]
 
         self.max_episodes = max_episodes
