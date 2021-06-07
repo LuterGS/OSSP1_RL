@@ -89,11 +89,11 @@ class MultiMario(Process):
             self.mario.input.button_pressed[0] = False
             self.mario.input.button_pressed[1] = False
             reward -= 3
-        elif action[0] > action[1]:
+        elif action[0] < action[1]:
             self.mario.input.button_pressed[0] = True
             self.mario.input.button_pressed[1] = False
             reward -= 10
-        elif action[1] > action[0]:
+        elif action[1] < action[0]:
             self.mario.input.button_pressed[0] = False
             self.mario.input.button_pressed[1] = True
             reward += 20
@@ -106,7 +106,7 @@ class MultiMario(Process):
         done = False
 
         # 입력을 기반으로 게임 진행
-        for i in range(6):
+        for i in range(3):
             if self.mario.restart:
                 done = True
                 break
@@ -130,7 +130,7 @@ class MultiMario(Process):
 
             # 다음값 관측
             observation = self.reset()
-            return observation, reward, False, None
+            return observation, reward, done, None
 
         # 게임을 클리어했을 때
         if self.mario.clear:
@@ -217,7 +217,7 @@ class BasicEnv(gym.Env):
         self.reset_value += 1
         self.ptoc_queue.put([2, action])
         value = self.ctop_queue.get()
-        if self.reset_value > 100:  # 20초동안 clear 못하면 reset
+        if self.reset_value > 200:  # 20초동안 clear 못하면 reset
             value = list(value)
             value[2] = True
             value[1] -= 200 * (1-value[3])      # 못깼을때도 죽은거랑 동일한 보상 제공
