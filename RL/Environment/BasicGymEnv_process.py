@@ -80,13 +80,19 @@ class MultiMario(Process):
         # agent의 action 결과를 받는다.
         # Multi-Discrete 환경이라서 어떻게 받는지는 모르겠지만, 일단 4개 numpy array를 받는다고 가정하자.
         # print("Action : ", action)
+
+        reward = -1
+
         if action[0] == action[1]:
+            reward -= 0.7
             self.mario.input.button_pressed[0] = False
             self.mario.input.button_pressed[1] = False
         elif action[0] > action[1]:
+            reward -= 1
             self.mario.input.button_pressed[0] = True
             self.mario.input.button_pressed[1] = False
         elif action[1] > action[0]:
+            reward += 2
             self.mario.input.button_pressed[0] = False
             self.mario.input.button_pressed[1] = True
         self.mario.input.button_pressed[2] = False if action[2] < 0.5 else True
@@ -100,7 +106,7 @@ class MultiMario(Process):
         done = False
 
         # 입력을 기반으로 게임 진행
-        for i in range(12):
+        for i in range(20):
             if self.mario.restart:
                 done = True
                 break
@@ -114,7 +120,12 @@ class MultiMario(Process):
             pygame.display.update()
             self.clock.tick(self.max_frame_rate)
 
-        if self.mario.clear:
+        if not self.mario.clear and done:
+            reward -= 50
+            observation = self.reset()
+            return observation, reward, False, None
+
+        if self.mario.clear and done:
             done = True
             reward = 300
             observation = ImgExtract.Capture(self.screen, cv2.COLOR_BGR2GRAY)
@@ -122,13 +133,6 @@ class MultiMario(Process):
 
         # 이후에 observation을 받아옴
         observation = np.reshape(ImgExtract.Capture(self.screen, cv2.COLOR_BGR2GRAY), [480,  640, 1])
-        reward = -1  # 추후에 이미지 토대로 calculation 가능
-
-        # reward를 일단 먼저 측정하는데, 왼쪽으로 가면 마이너스, 오른쪽으로 가면 플러스를 주자
-        if self.mario.input.button_pressed[0]:
-            reward -= 0.5
-        elif self.mario.input.button_pressed[1]:
-            reward += 2
 
         # if self.mario.input.button_pressed[2]:
         #     reward += 0.5
@@ -184,10 +188,10 @@ class BasicEnv(gym.Env):
         self.reset_value += 1
         self.ptoc_queue.put([2, action])
         value = self.ctop_queue.get()
-        if self.reset_value > 125:  # 1분동안 clear 못하면 reset
+        if self.reset_value > 100:  # 20초동안 clear 못하면 reset
             value = list(value)
             value[2] = True
-            # value[1] -= 120      # 못깼을때도 죽은거랑 동일한 보상 제공
+            value[1] -= 50      # 못깼을때도 죽은거랑 동일한 보상 제공
             value = tuple(value)
             self.reset_value = 0
         # return 큐 값, done
