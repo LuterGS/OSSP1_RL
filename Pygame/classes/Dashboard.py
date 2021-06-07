@@ -29,7 +29,7 @@ class Dashboard(Font):
 
         # update Time
         self.ticks += 1
-        if self.ticks == 60:
+        if self.ticks == 30:
             self.ticks = 0
             self.time += 1
 

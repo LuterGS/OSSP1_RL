@@ -1,4 +1,4 @@
-import Pygame
+import pygame
 
 
 class Tile:
@@ -8,6 +8,6 @@ class Tile:
 
     def drawRect(self, screen):
         try:
-            Pygame.draw.rect(screen, Pygame.Color(255, 0, 0), self.rect, 1)
+            pygame.draw.rect(screen, pygame.Color(255, 0, 0), self.rect, 1)
         except Exception:
             pass

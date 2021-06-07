@@ -159,6 +159,7 @@ class Mario(EntityBase):
         white=(255,255,255)
         pygame.draw.rect(self.screen, black, [0, 0, 640, 20])
         pygame.draw.rect(self.screen, white, [0, 0, ((self.rect.x / 32) / self.levelObj.levelLength) * 640, 20])
+        print(((self.rect.x / 32) / self.levelObj.levelLength))
         pygame.display.update()
 
     def gameOver(self):
