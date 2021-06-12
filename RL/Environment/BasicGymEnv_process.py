@@ -229,14 +229,15 @@ class MultiMario(Process):
             reward -= 200 * (1-pos_percent)
 
             # 다음값 관측
-            observation = self.reset()
+            observation = self.observation(self.mario, self.level.returnEntityList())
             return observation, reward, done, None
 
         # 게임을 클리어했을 때
         if self.mario.clear:
             done = True
             reward = 3000
-            observation = ImgExtract.Capture(self.screen, cv2.COLOR_BGR2GRAY)
+            observation = self.observation(self.mario, self.level.returnEntityList())
+            # observation = ImgExtract.Capture(self.screen, cv2.COLOR_BGR2GRAY)
             return observation, reward, done, None
 
         # 현재 시간과 위치를 측정
