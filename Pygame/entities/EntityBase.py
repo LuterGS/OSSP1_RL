@@ -38,4 +38,7 @@ class EntityBase(object):
         return Vec2D(self.rect.x / 32.0, self.rect.y / 32.0)
 
     def getXY(self):
-        return np.array([self.rect.x / 32, self.rect.y / 32])
+        return [self.rect.x/32, self.rect.y/32]
+
+    # def getXY(self):
+    #     return np.array([self.rect.x / 32, self.rect.y / 32])

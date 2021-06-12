@@ -13,9 +13,9 @@ if __name__ == "__main__":
     # check_env(BasicEnv(), skip_render_check=True)
     test_env = BasicEnv()
 
-    env = make_vec_env(BasicEnv, n_envs=2)
+    env = make_vec_env(BasicEnv, n_envs=1)
 
-    model = PPO("CnnPolicy", env, verbose=1)
+    model = PPO("MlpPolicy", env, verbose=1)
     model.learn(total_timesteps=2500)
     model.save("test2")
 

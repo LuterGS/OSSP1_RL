@@ -18,43 +18,7 @@ from multiprocessing import Process, Queue
 
 button_log = ["left", "right", "up", "dash"]
 
-goomba = [(0, 0) for _ in range(20)]
-koopa = [(0, 0) for _ in range(20)]
-coin = [(0, 0) for _ in range(20)]
-random = [(0, 0) for _ in range (20)]
-
 level = "Level1-1.json"
-
-
-def getEntityXY(mario, entityList, map_length):
-    mario_xy = np.array([mario.rect.x / 32, mario.rect.y / 32])
-    goomba_count = 0
-    koopa_count = 0
-    coin_count = 0
-    random_count = 0
-    for entity in entityList:
-        print(entity, type(entity))
-        # data = entity.getXY() - mario_xy
-        # data[0] = data[0] / map_length      # 정규화 - x (맵 길이 기준으로 0~1 minmax)
-        # data[1] = data[1] / 10.0            # 정규화 - y (-10 ~ 10 기준으로 측정되는 것 같아서, 그 기준으로 minmax)
-
-        # if str(type(entity)) == "<class 'Pygame.entities.Goomba.Goomba'>":
-        #     goomba_diff.append(data)
-        # if str(type(entity)) == "<class 'Pygame.entities.Koopa.Koopa'>":
-        #     koopa_diff.append(data)
-        # if str(type(entity)) == "<class 'Pygame.entities.Coin.Coin'>":
-        #     coin_diff.append(data)
-        # if str(type(entity)) == "<class 'Pygame.entities.RandomBox.RandomBox'>":
-        #     RandomBox_diff.append(data)
-    exit(0)
-
-    # print(f"Goomba : {goomba_diff}")
-    # print(f"Koopa : {koopa_diff}")
-    # print(f"Coin : {coin_diff}")
-    # print(f"Random : {RandomBox_diff}")
-    print(f'Goomba: {len(goomba_diff)}, Koopa: {len(koopa_diff)}, Coin: {len(coin_diff)}, Random: {len(RandomBox_diff)}')
-    return np.asarray(goomba_diff), np.asarray(koopa_diff), np.asarray(coin_diff), np.asarray(RandomBox_diff)
-
 
 class MultiMario(Process):
     def __init__(self, ptoc_queue: Queue, ctop_queue: Queue):
@@ -74,17 +38,103 @@ class MultiMario(Process):
     def load_map(self):
         with open("./Pygame/levels/Level1-1.json", 'r') as file:
             jsons = json.load(file)
-        print(jsons["level"]["objects"]["sky"])
-        exit(0)
+        self.map_length = jsons["level"]["layers"]["ground"]["x"][1]
+        self.blocks = [[float(i), 13.0] for i in range(self.map_length)]
+        holes = jsons["level"]["objects"]["sky"]
+        for hole in holes:
+            if hole[1] == 13:
+                self.blocks.pop(self.blocks.index(hole))
+        pipes = jsons["level"]["objects"]["pipe"]
+        for pipe in pipes:
+            start, end = float(pipe[0]), float(pipe[1])
+            for i in range(pipe[1], 13):
+                float_i = float(i)
+                self.blocks.append([start, float_i])
+                self.blocks.append([end, float_i])
+        additional_blocks = jsons["level"]["objects"]["ground"]
+        for ad_block in additional_blocks:
+            ad_block[0], ad_block[1] = float(ad_block[0]), float(ad_block[1])
+            self.blocks.append(ad_block)
+
+        # +- 10정도만 보이게
+
+    def getEntityXY(self, mario_xy, entity_list, map_length):
+        goomba_koopa = [[0.0, 0.0] for _ in range(20)]
+        coins = [[0.0, 0.0] for _ in range(20)]
+        stuff = [[0.0, 0.0] for _ in range(20)]
+        goomba_count, koopa_count = 0, 0
+        coin_count = 0
+        rdbox_count, rmr_count = 0, 0
+
+        for entity in entity_list:
+            entity_pos = entity.getXY()
+            if not mario_xy[0] - 10 <= entity_pos[0] <= mario_xy[0] + 10:
+                continue
+            if entity_pos[1] < 0:
+                continue
+
+            entity_pos[0] = entity_pos[0] / map_length
+            entity_pos[1] = entity_pos[1] / 14
+
+            if str(type(entity)) == "<class 'Pygame.entities.Goomba.Goomba'>":
+                if goomba_count < 10:
+                    goomba_koopa[goomba_count] = entity_pos
+                    goomba_count += 1
+            if str(type(entity)) == "<class 'Pygame.entities.Koopa.Koopa'>":
+                if koopa_count < 10:
+                    goomba_koopa[koopa_count + 10] = entity_pos
+                    koopa_count += 1
+            if str(type(entity)) == "<class 'Pygame.entities.Coin.Coin'>":
+                if coin_count < 20:
+                    coins[coin_count] = entity_pos
+                    coin_count += 1
+            if str(type(entity)) == "<class 'Pygame.entities.RandomBox.RandomBox'>":
+                if rdbox_count < 15:
+                    stuff[rdbox_count] = entity_pos
+                    rdbox_count += 1
+            if str(type(entity)) == "<class 'Pygame.entities.Mushroom.RedMushroom'>":
+                if rmr_count < 5:
+                    stuff[rmr_count + 15] = entity_pos
+                    rmr_count += 1
+
+        return np.asarray(goomba_koopa + coins + stuff)
 
 
+    def observation(self, mario, entity_list):
+        mario_xy = [mario.rect.x / 32, mario.rect.y / 32]
+
+        visible_blocks = [[0.0, 0.0] for _ in range(60)]
+        vb_count = 0
+
+        for block in self.blocks:
+            if not mario_xy[0] - 10 <= block[0] <= mario_xy[0] + 10:
+                continue
+            if vb_count >= 60:
+                break
+
+            # block[0] = block[0] / self.map_length
+            # print(block[1], end="\t")
+            # block[1] = block[1] / 14.0
+            # print(block[1])
+
+            visible_blocks[vb_count] = [block[0] / self.map_length, block[1] / 14.0]
+            vb_count += 1
+            print(visible_blocks[vb_count - 1])
+
+        entities = self.getEntityXY(mario_xy, entity_list, self.map_length)
+        # exit(0)
+
+        res = np.asarray([visible_blocks, entities])
+        # print(res)
+        print(res[0][0][0])
+        return np.asarray([visible_blocks, entities])
 
     def reset(self):
 
         pygame.mixer.pre_init(44100, -16, 2, 4096)
         pygame.init()
         self.screen = pygame.display.set_mode(self.window_size)
-        self.max_frame_rate = 30
+        self.max_frame_rate = 60
         self.dashboard = Dashboard("./Pygame/img/font.png", 8, self.screen)
         self.sound = Sound()
         self.level = Level(self.screen, self.sound, self.dashboard)
@@ -122,12 +172,12 @@ class MultiMario(Process):
 
         self.time = self.dashboard.time
         self.pos_percent = (self.mario.rect.x / 32) / self.mario.levelObj.levelLength
-
-        # 그 이후에 observation을 받아오고
-        observation = np.reshape(ImgExtract.Capture(self.screen, cv2.COLOR_BGR2GRAY), [480,  640, 1])
+        #
+        # # 그 이후에 observation을 받아오고
+        # observation = np.reshape(ImgExtract.Capture(self.screen, cv2.COLOR_BGR2GRAY), [480,  640, 1])
 
         # return 해줄 것.
-        return observation
+        return self.observation(self.mario, self.level.returnEntityList())
 
     def step(self, action):
 
@@ -156,7 +206,7 @@ class MultiMario(Process):
         done = False
 
         # 입력을 기반으로 게임 진행
-        for i in range(3):
+        for i in range(12):
             if self.mario.restart:
                 done = True
                 break
@@ -170,14 +220,6 @@ class MultiMario(Process):
             pygame.display.update()
             self.clock.tick(self.max_frame_rate)
         reward = 0
-
-        goombas, koopas, coins, random_boxes = getEntityXY(self.mario, self.level.returnEntityList(), self.mario.levelObj.levelLength)
-        goomba_num = len(goombas)
-        koopa_num = len(koopas)
-        coin_num = len(coins)
-        randombox_num = len(random_boxes)
-
-
 
         # 게임을 클리어하지 못하고 죽었을 때
         if not self.mario.clear and done:
@@ -231,8 +273,11 @@ class MultiMario(Process):
         self.pos_percent = pos_percent
 
         # 이후에 observation을 받아옴
-        observation = np.reshape(ImgExtract.Capture(self.screen, cv2.COLOR_BGR2GRAY), [480,  640, 1])
+        observation = self.observation(self.mario, self.level.returnEntityList())
+        # observation = np.reshape(ImgExtract.Capture(self.screen, cv2.COLOR_BGR2GRAY), [480,  640, 1])
         return observation, reward, done, pos_percent
+
+
 
     def program_run(self):
 
@@ -252,7 +297,7 @@ class BasicEnv(gym.Env):
     """Custom environment Basic code"""
     metadata = {"render.modes": ["human"]}
     action_space = spaces.MultiDiscrete([2, 2, 2, 2])
-    observation_space = spaces.Box(low=0, high=255, shape=(480, 640, 1), dtype=np.uint8)
+    observation_space = spaces.Box(low=0, high=1, shape=(2, 60, 2), dtype=np.float)
     reward_range = (-float(300), float(300))
 
     def __init__(self):
@@ -276,7 +321,7 @@ class BasicEnv(gym.Env):
         self.reset_value += 1
         self.ptoc_queue.put([2, action])
         value = self.ctop_queue.get()
-        if self.reset_value > 200:  # 20초동안 clear 못하면 reset
+        if self.reset_value > 150:  # 20초동안 clear 못하면 reset
             value = list(value)
             value[2] = True
             value[1] -= 200 * (1-value[3])      # 못깼을때도 죽은거랑 동일한 보상 제공
