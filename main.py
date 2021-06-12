@@ -7,12 +7,35 @@ from Pygame.classes.Sound import Sound
 from Pygame.entities.Mario import Mario
 from Pygame.openCV import ImgExtract
 import cv2
+import numpy as np
 
 windowSize = 640, 480
 playCount = 0
 clearCount = 0
-postion_persent=0;
-time=0;
+# postion_persent=0;
+# time=0;
+
+def getEntityXY(mario,entityList):
+    mario_xy=np.array([mario.rect.x/32,mario.rect.y/32])
+    goomba_diff=[]
+    koopa_diff = []
+    coin_diff = []
+    RandomBox_diff=[]
+    for entity in entityList:
+        if str(type(entity))=="<class 'Pygame.entities.Goomba.Goomba'>":
+            goomba_diff.append(tuple(entity.getXY()-mario_xy))
+        if str(type(entity)) == "<class 'Pygame.entities.Koopa.Koopa'>":
+            koopa_diff.append(tuple(entity.getXY()-mario_xy))
+        if str(type(entity)) == "<class 'Pygame.entities.Coin.Coin'>":
+            coin_diff.append(tuple(entity.getXY()-mario_xy))
+        if str(type(entity)) == "<class 'Pygame.entities.RandomBox.RandomBox'>":
+            RandomBox_diff.append(tuple(entity.getXY()-mario_xy))
+
+    print(goomba_diff)
+    print(koopa_diff)
+    print(coin_diff)
+    print(RandomBox_diff)
+    return goomba_diff,koopa_diff,coin_diff,RandomBox_diff
 
 def main():
     pygame.mixer.pre_init(44100, -16, 2, 4096)
@@ -33,7 +56,7 @@ def main():
     clock = pygame.time.Clock()
     global playCount ,clearCount
     playCount+=1
-    print("pc",playCount)
+    # print("pc",playCount)
     fps = 0
     while not mario.restart:
         if fps == 30: fps = 0
@@ -44,11 +67,15 @@ def main():
             mario.pauseObj.update()
         else:
             level.drawLevel(mario.camera)
-            time=dashboard.time
+            getEntityXY(mario, level.returnEntityList())
             dashboard.update()
-            postion_persent=(mario.rect.x/32)/mario.levelObj.levelLength
-            print(postion_persent)
-            print("time :",time)
+
+            # time=dashboard.time
+            # postion_persent=(mario.rect.x/32)/mario.levelObj.levelLength
+            # print(postion_persent)
+            # print("time :",time)
+            print("x",mario.rect.x/32)
+            print("y",mario.rect.y/32)
             mario.update()
         pygame.display.update()
         clock.tick(max_frame_rate)
@@ -56,7 +83,7 @@ def main():
         fps += 1
     if mario.clear == True:
         clearCount += 1
-        print("cc",clearCount)
+        # print("cc",clearCount)
     return 'restart'
 
 

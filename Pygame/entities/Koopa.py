@@ -1,5 +1,5 @@
 import pygame
-
+import numpy as np
 from Pygame.classes.Animation import Animation
 from Pygame.classes.Collider import Collider
 from Pygame.classes.EntityCollider import EntityCollider
@@ -27,6 +27,9 @@ class Koopa(EntityBase):
         self.EntityCollider = EntityCollider(self)
         self.levelObj = level
         self.sound = sound
+
+    def getXY(self):
+        return np.array([self.rect.x/32,self.rect.y/32])
 
     def update(self, camera):
         if self.alive and self.active:

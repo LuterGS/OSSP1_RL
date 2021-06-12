@@ -1,7 +1,7 @@
 from copy import copy
 
 from Pygame.entities.EntityBase import EntityBase
-
+import numpy as np
 
 class RandomBox(EntityBase):
     def __init__(self, screen, spriteCollection, x, y, item, sound, dashboard, level, gravity=0):
@@ -18,6 +18,9 @@ class RandomBox(EntityBase):
         self.vel = 1
         self.item = item
         self.level = level
+
+    def getXY(self):
+        return np.array([self.rect.x/32,self.rect.y/32])
 
     def update(self, cam):
         if self.alive and not self.triggered:

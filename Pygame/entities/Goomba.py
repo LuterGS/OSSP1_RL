@@ -4,6 +4,7 @@ from Pygame.classes.EntityCollider import EntityCollider
 from Pygame.classes.Maths import Vec2D
 from Pygame.entities.EntityBase import EntityBase
 from Pygame.traits.leftrightwalk import LeftRightWalkTrait
+import numpy as np
 
 
 class Goomba(EntityBase):
@@ -25,6 +26,10 @@ class Goomba(EntityBase):
         self.levelObj = level
         self.sound = sound
         self.textPos = Vec2D(0, 0)
+
+
+    def getXY(self):
+        return np.array([self.rect.x/32,self.rect.y/32])
 
     def update(self, camera):
         if self.alive:

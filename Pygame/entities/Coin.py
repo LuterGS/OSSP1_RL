@@ -1,4 +1,5 @@
 from copy import copy
+import numpy as np
 
 from Pygame.entities.EntityBase import EntityBase
 
@@ -10,6 +11,9 @@ class Coin(EntityBase):
         self.spriteCollection = spriteCollection
         self.animation = copy(self.spriteCollection.get("coin").animation)
         self.type = "Item"
+
+    def getXY(self):
+        return np.array([self.rect.x/32,self.rect.y/32])
 
     def update(self, cam):
         if self.alive:

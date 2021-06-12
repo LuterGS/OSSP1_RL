@@ -24,6 +24,9 @@ class Level:
         self.entityList = []
 #        self.MakeMap = MakeRandomMap()
 
+    def returnEntityList(self):
+        return self.entityList
+
     def loadLevel(self, levelname):
         #Make brand-new Random map.
  #       self.MakeMap.write_Json()
