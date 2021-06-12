@@ -2,6 +2,8 @@ import pygame
 
 from Pygame.classes.Maths import Vec2D
 
+import numpy as np
+
 
 class EntityBase(object):
     def __init__(self, x, y, gravity):
@@ -34,3 +36,6 @@ class EntityBase(object):
 
     def getPosIndexAsFloat(self):
         return Vec2D(self.rect.x / 32.0, self.rect.y / 32.0)
+
+    def getXY(self):
+        return np.array([self.rect.x / 32, self.rect.y / 32])

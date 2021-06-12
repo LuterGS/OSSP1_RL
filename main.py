@@ -7,10 +7,34 @@ from Pygame.classes.Sound import Sound
 from Pygame.entities.Mario import Mario
 from Pygame.openCV import ImgExtract
 import cv2
+import numpy as np
 
 windowSize = 640, 480
 playCount = 0
 clearCount = 0
+
+
+def getEntityXY(mario, entityList):
+    mario_xy = np.array([mario.rect.x / 32, mario.rect.y / 32])
+    goomba_diff = []
+    koopa_diff = []
+    coin_diff = []
+    RandomBox_diff = []
+    for entity in entityList:
+        if str(type(entity)) == "<class 'Pygame.entities.Goomba.Goomba'>":
+            goomba_diff.append(tuple(entity.getXY() - mario_xy))
+        if str(type(entity)) == "<class 'Pygame.entities.Koopa.Koopa'>":
+            koopa_diff.append(tuple(entity.getXY() - mario_xy))
+        if str(type(entity)) == "<class 'Pygame.entities.Coin.Coin'>":
+            coin_diff.append(tuple(entity.getXY() - mario_xy))
+        if str(type(entity)) == "<class 'Pygame.entities.RandomBox.RandomBox'>":
+            RandomBox_diff.append(tuple(entity.getXY() - mario_xy))
+
+    print(goomba_diff)
+    print(koopa_diff)
+    print(coin_diff)
+    print(RandomBox_diff)
+    return goomba_diff, koopa_diff, coin_diff, RandomBox_diff
 
 
 def main():
@@ -30,14 +54,14 @@ def main():
 
     mario = Mario(0, 0, level, screen, dashboard, sound)
     clock = pygame.time.Clock()
-    global playCount ,clearCount
-    playCount+=1
-    print("pc",playCount)
+    global playCount, clearCount
+    playCount += 1
+    print("pc", playCount)
     fps = 0
     while not mario.restart:
         if fps == 30: fps = 0
         # image Capture
-        ImgExtract.Capture(screen, fps, 5, cv2.COLOR_BGR2GRAY)
+        ImgExtract.Capture(screen, cv2.COLOR_BGR2GRAY)
         pygame.display.set_caption("Super Mario running with {:d} FPS".format(int(clock.get_fps())))
         if mario.pause:
             mario.pauseObj.update()
@@ -50,7 +74,7 @@ def main():
         fps += 1
     if mario.clear == True:
         clearCount += 1
-        print("cc",clearCount)
+        print("cc", clearCount)
     return 'restart'
 
 

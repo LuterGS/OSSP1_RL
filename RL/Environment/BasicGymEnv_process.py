@@ -1,3 +1,5 @@
+import json
+
 import gym
 import numpy as np
 from gym import spaces
@@ -16,10 +18,50 @@ from multiprocessing import Process, Queue
 
 button_log = ["left", "right", "up", "dash"]
 
+goomba = [(0, 0) for _ in range(20)]
+koopa = [(0, 0) for _ in range(20)]
+coin = [(0, 0) for _ in range(20)]
+random = [(0, 0) for _ in range (20)]
+
+level = "Level1-1.json"
+
+
+def getEntityXY(mario, entityList, map_length):
+    mario_xy = np.array([mario.rect.x / 32, mario.rect.y / 32])
+    goomba_count = 0
+    koopa_count = 0
+    coin_count = 0
+    random_count = 0
+    for entity in entityList:
+        print(entity, type(entity))
+        # data = entity.getXY() - mario_xy
+        # data[0] = data[0] / map_length      # 정규화 - x (맵 길이 기준으로 0~1 minmax)
+        # data[1] = data[1] / 10.0            # 정규화 - y (-10 ~ 10 기준으로 측정되는 것 같아서, 그 기준으로 minmax)
+
+        # if str(type(entity)) == "<class 'Pygame.entities.Goomba.Goomba'>":
+        #     goomba_diff.append(data)
+        # if str(type(entity)) == "<class 'Pygame.entities.Koopa.Koopa'>":
+        #     koopa_diff.append(data)
+        # if str(type(entity)) == "<class 'Pygame.entities.Coin.Coin'>":
+        #     coin_diff.append(data)
+        # if str(type(entity)) == "<class 'Pygame.entities.RandomBox.RandomBox'>":
+        #     RandomBox_diff.append(data)
+    exit(0)
+
+    # print(f"Goomba : {goomba_diff}")
+    # print(f"Koopa : {koopa_diff}")
+    # print(f"Coin : {coin_diff}")
+    # print(f"Random : {RandomBox_diff}")
+    print(f'Goomba: {len(goomba_diff)}, Koopa: {len(koopa_diff)}, Coin: {len(coin_diff)}, Random: {len(RandomBox_diff)}')
+    return np.asarray(goomba_diff), np.asarray(koopa_diff), np.asarray(coin_diff), np.asarray(RandomBox_diff)
+
 
 class MultiMario(Process):
     def __init__(self, ptoc_queue: Queue, ctop_queue: Queue):
         Process.__init__(self)
+
+        self.load_map()
+
         self.ptoc_queue = ptoc_queue
         # [1, 0]은 reset, [2, action]는 step으로 하자.
         self.ctop_queue = ctop_queue
@@ -27,6 +69,14 @@ class MultiMario(Process):
         self.window_size = 640, 480
         self.play_count = 0
         self.clear_count = 0
+
+
+    def load_map(self):
+        with open("./Pygame/levels/Level1-1.json", 'r') as file:
+            jsons = json.load(file)
+        print(jsons["level"]["objects"]["sky"])
+        exit(0)
+
 
 
     def reset(self):
@@ -41,14 +91,14 @@ class MultiMario(Process):
         self.menu = Menu(self.screen, self.dashboard, self.level, self.sound)
         self.MakeMap = MakeRandomMap()
 
-
-
         self.MakeMap.write_Json()
-        self.menu.button_pressed[3] = True
-        self.menu.update()
 
-        self.menu.button_pressed[3] = True
-        self.menu.update()
+        if level == "Level1-1.json":
+            self.menu.button_pressed[3] = True
+            self.menu.update()
+
+            self.menu.button_pressed[3] = True
+            self.menu.update()
 
         while not self.menu.start:
             self.menu.update()
@@ -121,6 +171,14 @@ class MultiMario(Process):
             self.clock.tick(self.max_frame_rate)
         reward = 0
 
+        goombas, koopas, coins, random_boxes = getEntityXY(self.mario, self.level.returnEntityList(), self.mario.levelObj.levelLength)
+        goomba_num = len(goombas)
+        koopa_num = len(koopas)
+        coin_num = len(coins)
+        randombox_num = len(random_boxes)
+
+
+
         # 게임을 클리어하지 못하고 죽었을 때
         if not self.mario.clear and done:
 
@@ -142,6 +200,7 @@ class MultiMario(Process):
         # 현재 시간과 위치를 측정
         time = self.dashboard.time
         pos_percent = (self.mario.rect.x / 32) / self.mario.levelObj.levelLength
+        ypos_percent = self.mario.rect.y / 32
 
         # 기존의 위치랑 비교해 잘 진행했는지 비교
         mov_diff = pos_percent - self.pos_percent
