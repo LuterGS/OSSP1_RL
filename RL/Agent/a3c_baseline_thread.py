@@ -51,11 +51,14 @@ class Actor:
 
     def nn_model(self):
 
-        inputs = layers.Input(shape=(2, 60, 2,))
-        dense = layers.Dense(64, activation='relu', name="d1")(inputs)
+        inputs = layers.Input(shape=(2, 40, 2,))
+        dense = layers.Dense(128, activation='relu', name="d1")(inputs)
         dropout = layers.Dropout(0.2)(dense)
-        dense2 = layers.Dense(32, activation='relu', name="d2")(dropout)
-        flatten = layers.Flatten()(dense2)
+        dense2 = layers.Dense(64, activation='relu', name="d2")(dropout)
+        dropout2 = layers.Dropout(0.2)(dense2)
+        dense3 = layers.Dense(32, activation='relu', name="d3")(dropout2)
+        dropout3 = layers.Dropout(0.2)(dense3)
+        flatten = layers.Flatten()(dropout3)
         out_mu = layers.Dense(self.action_dim, activation='relu')(flatten)
         mu_output = layers.Lambda(lambda x: x * self.action_bound)(out_mu)
         std_output = layers.Dense(self.action_dim, activation='relu')(flatten)
@@ -71,7 +74,7 @@ class Actor:
         return tf.keras.models.Model(inputs, [mu_output, std_output])
 
     def get_action(self, state):
-        state = np.reshape(state, [1, 2, 60, 2])
+        state = np.reshape(state, [1, 2, 40, 2])
         # print(state.shape, state)
         mu, std = self.model.predict(state)
         mu, std = mu[0], std[0]
@@ -119,12 +122,12 @@ class Critic:
 
         return tf.keras.Sequential(
             [
-                Input((2, 60, 2)),
+                Input((2, 40, 2)),
+                Dense(128, activation="relu"),
                 Dense(64, activation="relu"),
-                Dense(32, activation="relu"),
                 Flatten(),
+                Dense(128, activation="relu"),
                 Dense(32, activation="relu"),
-                Dense(16, activation="relu"),
                 Dense(1, activation="linear"),
             ]
         )
@@ -244,7 +247,7 @@ class A3CWorker(Thread):
             reward_batch = []
             episode_reward, done = 0, False
 
-            state = self.env.reset()
+            state = np.reshape(self.env.reset(), [1, 2, 40, 2])
 
             while not done:
                 # 현재 상태로부터 취할 행동을 Actor로부터 얻어음
@@ -254,9 +257,9 @@ class A3CWorker(Thread):
                 # 얻어온 행동을 실제 Env에 작용, 다음 상태와 reward를 받아옴
                 next_state, reward, done, _ = self.env.step(action)
 
-                state = np.reshape(state, [1, 2, 60, 2])
+                state = np.reshape(state, [1, 2, 40, 2])
                 action = np.reshape(action, [1, 4])
-                next_state = np.reshape(next_state, [1, 2, 60, 2])
+                next_state = np.reshape(next_state, [1, 2, 40, 2])
                 reward = np.reshape(reward, [1, 1])
                 # 각 상태, 행동, 보상을 저장함
                 state_batch.append(state)

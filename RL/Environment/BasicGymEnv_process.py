@@ -1,4 +1,6 @@
+import _queue
 import json
+import time
 
 import gym
 import numpy as np
@@ -17,8 +19,12 @@ import cv2
 from multiprocessing import Process, Queue
 
 button_log = ["left", "right", "up", "dash"]
-
 level = "Level1-1.json"
+act_frame_sec = 0.2
+reset_time = 30
+frame_rate = 60
+
+
 
 class MultiMario(Process):
     def __init__(self, ptoc_queue: Queue, ctop_queue: Queue):
@@ -60,8 +66,8 @@ class MultiMario(Process):
 
     def getEntityXY(self, mario_xy, entity_list, map_length):
         goomba_koopa = [[0.0, 0.0] for _ in range(20)]
-        coins = [[0.0, 0.0] for _ in range(20)]
-        stuff = [[0.0, 0.0] for _ in range(20)]
+        coins = [[0.0, 0.0] for _ in range(10)]
+        stuff = [[0.0, 0.0] for _ in range(10)]
         goomba_count, koopa_count = 0, 0
         coin_count = 0
         rdbox_count, rmr_count = 0, 0
@@ -85,16 +91,16 @@ class MultiMario(Process):
                     goomba_koopa[koopa_count + 10] = entity_pos
                     koopa_count += 1
             if str(type(entity)) == "<class 'Pygame.entities.Coin.Coin'>":
-                if coin_count < 20:
+                if coin_count < 10:
                     coins[coin_count] = entity_pos
                     coin_count += 1
             if str(type(entity)) == "<class 'Pygame.entities.RandomBox.RandomBox'>":
-                if rdbox_count < 15:
+                if rdbox_count < 5:
                     stuff[rdbox_count] = entity_pos
                     rdbox_count += 1
             if str(type(entity)) == "<class 'Pygame.entities.Mushroom.RedMushroom'>":
                 if rmr_count < 5:
-                    stuff[rmr_count + 15] = entity_pos
+                    stuff[rmr_count + 5] = entity_pos
                     rmr_count += 1
 
         return goomba_koopa + coins + stuff
@@ -103,7 +109,7 @@ class MultiMario(Process):
     def observation(self, mario, entity_list):
         mario_xy = [mario.rect.x / 32, mario.rect.y / 32]
 
-        visible_blocks = [[0.0, 0.0] for _ in range(60)]
+        visible_blocks = [[0.0, 0.0] for _ in range(40)]
         vb_count = 0
 
         for block in self.blocks:
@@ -135,7 +141,7 @@ class MultiMario(Process):
         pygame.mixer.pre_init(44100, -16, 2, 4096)
         pygame.init()
         self.screen = pygame.display.set_mode(self.window_size)
-        self.max_frame_rate = 60
+        self.max_frame_rate = frame_rate
         self.dashboard = Dashboard("./Pygame/img/font.png", 8, self.screen)
         self.sound = Sound()
         self.level = Level(self.screen, self.sound, self.dashboard)
@@ -207,7 +213,7 @@ class MultiMario(Process):
         done = False
 
         # 입력을 기반으로 게임 진행
-        for i in range(12):
+        for i in range(int(frame_rate * act_frame_sec)):
             if self.mario.restart:
                 done = True
                 break
@@ -313,17 +319,26 @@ class BasicEnv(gym.Env):
         self.mario = MultiMario(self.ptoc_queue, self.ctop_queue)
         self.mario.start()
 
+    def get_value_from_queue(self, input_value):
+        while True:
+            self.ptoc_queue.put(input_value)
+            try:
+                return self.ctop_queue.get(timeout=3)
+            except _queue.Empty:
+                continue
+
     def reset(self):
         self.reset_value = 0
-        self.ptoc_queue.put([1, 0])
-        return self.ctop_queue.get()
+        return self.get_value_from_queue([1, 0])
 
     def step(self, action):
 
         self.reset_value += 1
-        self.ptoc_queue.put([2, action])
-        value = self.ctop_queue.get()
-        if self.reset_value > 150:  # 20초동안 clear 못하면 reset
+        value = self.get_value_from_queue([2, action])
+        print(value)
+        # self.ptoc_queue.put([2, action])
+        # value = self.ctop_queue.get()
+        if self.reset_value > (1 / act_frame_sec) * reset_time:  # 20초동안 clear 못하면 reset
             value = list(value)
             value[2] = True
             value[1] -= 200 * (1-value[3])      # 못깼을때도 죽은거랑 동일한 보상 제공
