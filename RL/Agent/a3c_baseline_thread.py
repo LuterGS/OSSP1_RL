@@ -247,7 +247,11 @@ class A3CWorker(Thread):
             reward_batch = []
             episode_reward, done = 0, False
 
-            state = np.reshape(self.env.reset(), [1, 2, 40, 2])
+            try:
+                state = np.reshape(self.env.reset(), [1, 2, 40, 2])
+            except ValueError:
+                state = self.env.reset()
+                print(state.shape, state)
 
             while not done:
                 # 현재 상태로부터 취할 행동을 Actor로부터 얻어음
