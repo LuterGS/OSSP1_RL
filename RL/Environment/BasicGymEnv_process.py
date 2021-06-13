@@ -1,4 +1,3 @@
-import _queue
 import json
 import time
 
@@ -17,6 +16,7 @@ from Pygame.openCV import ImgExtract
 import cv2
 
 from multiprocessing import Process, Queue
+from queue import Empty
 
 button_log = ["left", "right", "up", "dash"]
 level = "Level1-1.json"
@@ -324,7 +324,7 @@ class BasicEnv(gym.Env):
             self.ptoc_queue.put(input_value)
             try:
                 return self.ctop_queue.get(timeout=3)
-            except _queue.Empty:
+            except Empty:
                 continue
 
     def reset(self):
