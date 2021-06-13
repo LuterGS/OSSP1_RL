@@ -65,10 +65,10 @@ class MultiMario(Process):
         # +- 10정도만 보이게
 
     def getEntityXY(self, mario_xy, entity_list, map_length):
-        goomba_koopa = [[0.0, 0.0] for _ in range(20)]
-        coins = [[0.0, 0.0] for _ in range(10)]
-        stuff = [[0.0, 0.0] for _ in range(10)]
-        goomba_count, koopa_count = 0, 0
+        goomba_koopa = [[0.0, 0.0, 0.0] for _ in range(10)]
+        coins = [[0.0, 0.0, 0.0] for _ in range(10)]
+        stuff = [[0.0, 0.0, 0.0] for _ in range(10)]
+        gk_count = 0
         coin_count = 0
         rdbox_count, rmr_count = 0, 0
 
@@ -79,16 +79,18 @@ class MultiMario(Process):
             if entity_pos[1] < 0:
                 continue
 
-            res = [entity_pos[0] - mario_xy[0] / 10.0, entity_pos[1] - mario_xy[1] / 10.0]
+            res = [1.0, entity_pos[0] / map_length, entity_pos[1] / 14]
+
+            # res = [entity_pos[0] - mario_xy[0] / 10.0, entity_pos[1] - mario_xy[1] / 10.0]
 
             if str(type(entity)) == "<class 'Pygame.entities.Goomba.Goomba'>":
-                if goomba_count < 10:
-                    goomba_koopa[goomba_count] = res
-                    goomba_count += 1
+                if gk_count < 10:
+                    goomba_koopa[gk_count] = res
+                    gk_count += 1
             if str(type(entity)) == "<class 'Pygame.entities.Koopa.Koopa'>":
-                if koopa_count < 10:
-                    goomba_koopa[koopa_count + 10] = res
-                    koopa_count += 1
+                if gk_count < 10:
+                    goomba_koopa[gk_count] = res
+                    gk_count += 1
             if str(type(entity)) == "<class 'Pygame.entities.Coin.Coin'>":
                 if coin_count < 10:
                     coins[coin_count] = res
@@ -102,13 +104,13 @@ class MultiMario(Process):
                     stuff[rmr_count + 5] = res
                     rmr_count += 1
 
-        return goomba_koopa + coins + stuff
+        return goomba_koopa, coins, stuff
 
 
     def observation(self, mario, entity_list):
         mario_xy = [mario.rect.x / 32, mario.rect.y / 32]
 
-        visible_blocks = [[0.0, 0.0] for _ in range(40)]
+        visible_blocks = [[0.0, 0.0, 0.0] for _ in range(40)]
         vb_count = 0
 
         for block in self.blocks:
@@ -122,18 +124,18 @@ class MultiMario(Process):
             # block[1] = block[1] / 14.0
             # print(block[1])
 
-            visible_blocks[vb_count] = [block[0] - mario_xy[0] / 10.0, block[1] - mario_xy[1] / 10.0]
+            visible_blocks[vb_count] = [1.0, block[0] / self.map_length, block[1] / 14.0]
             vb_count += 1
             # print(visible_blocks[vb_count - 1])
 
-        entities = self.getEntityXY(mario_xy, entity_list, self.map_length)
+        goomba_koopa, coins, stuff = self.getEntityXY(mario_xy, entity_list, self.map_length)
         # exit(0)
 
-        final_output = np.asarray([visible_blocks, entities])
+        # final_output = np.asarray([visible_blocks, entities])
         # final_output = np.asarray(visible_blocks + entities)
         # print(final_output.shape, final_output)
 
-        return final_output
+        return np.asarray([mario_xy[0] / self.map_length, mario_xy[1] / 14]), np.asarray(visible_blocks), np.asarray(goomba_koopa), np.asarray(stuff)
 
     def reset(self):
 
@@ -147,7 +149,7 @@ class MultiMario(Process):
         self.menu = Menu(self.screen, self.dashboard, self.level, self.sound)
         self.MakeMap = MakeRandomMap()
 
-        self.MakeMap.write_Json()
+        # self.MakeMap.write_Json()
 
         if level == "Level1-1.json":
             self.menu.button_pressed[3] = True
@@ -229,19 +231,23 @@ class MultiMario(Process):
 
             # 차등 보상 적용
             pos_percent = (self.mario.rect.x / 32) / self.mario.levelObj.levelLength
-            reward -= 200 * (1-pos_percent)
+            reward -= 20 * (1-pos_percent)
 
             # 다음값 관측
             observation = self.observation(self.mario, self.level.returnEntityList())
-            return observation, reward, done, None
+            # print(f"observation : {observation}")
+            # print(f"reward : {reward}")
+            # print(f"done : {done}")
+            # print(f"pos_percent : {pos_percent}")
+            return observation, reward, done, pos_percent
 
         # 게임을 클리어했을 때
         if self.mario.clear:
             done = True
-            reward = 3000
+            reward = 300
             observation = self.observation(self.mario, self.level.returnEntityList())
             # observation = ImgExtract.Capture(self.screen, cv2.COLOR_BGR2GRAY)
-            return observation, reward, done, None
+            return observation, reward, done, "clear!"
 
         # 현재 시간과 위치를 측정
         time = self.dashboard.time
@@ -255,10 +261,10 @@ class MultiMario(Process):
 
         # # reward 1. 거리를 토대로 더 앞으로 갔으면 +, 뒤로 갔으면 - 제공
         if mov_diff > 0:
-            reward += mov_diff * 2 * 10
+            reward += mov_diff * 2
             # print(reward)
         else:
-            reward += mov_diff * 10
+            reward += mov_diff
             # print(reward)
 
         # 20초를 클리어 기준으로 삼을 때
@@ -267,14 +273,26 @@ class MultiMario(Process):
 
         if 0 <= time < seperated:
             pass
-        elif seperated <= time < seperated * 2 and pos_percent >= 20:
-            reward += 20
-        elif seperated * 2 < time <= seperated * 3 and pos_percent >= 40:
-            reward += 20
-        elif seperated * 3 < time <= seperated * 4 and pos_percent >= 60:
-            reward += 20
-        elif seperated * 4 < time <= seperated * 5 and pos_percent >= 80:
-            reward += 20
+        elif seperated <= time < seperated * 2:
+            if pos_percent >= 20:
+                reward += 2
+            else:
+                reward -= 2
+        elif seperated * 2 < time <= seperated * 3:
+            if pos_percent >= 40:
+                reward += 2
+            else:
+                reward -= 2
+        elif seperated * 3 < time <= seperated * 4:
+            if pos_percent >= 60:
+                reward += 2
+            else:
+                reward -= 2
+        elif seperated * 4 < time <= seperated * 5:
+            if pos_percent >= 80:
+                reward += 2
+            else:
+                reward -= 2
 
         self.time = time
         self.mario_x = mario_x
@@ -340,11 +358,16 @@ class BasicEnv(gym.Env):
         if self.reset_value > (1 / act_frame_sec) * reset_time:  # 20초동안 clear 못하면 reset
             value = list(value)
             value[2] = True
-            value[1] -= 200 * (1-value[3])      # 못깼을때도 죽은거랑 동일한 보상 제공
+            value[1] -= 20 * (1-value[3])      # 못깼을때도 죽은거랑 동일한 보상 제공
             value = tuple(value)
             self.reset_value = 0
         # return 큐 값, done
-        return value[0], value[1], value[2], {"location": "None"}
+        try:
+            return_val = value[0], value[1], value[2], {"location": "None"}
+            return return_val
+        except ValueError:
+            print(value)
+            exit(0)
 
     def reward(self, observation):
         reward = 0

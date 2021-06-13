@@ -51,17 +51,57 @@ class Actor:
 
     def nn_model(self):
 
-        inputs = layers.Input(shape=(2, 40, 2,))
-        dense = layers.Dense(128, activation='relu', name="d1")(inputs)
-        dropout = layers.Dropout(0.2)(dense)
-        dense2 = layers.Dense(64, activation='relu', name="d2")(dropout)
-        dropout2 = layers.Dropout(0.2)(dense2)
-        dense3 = layers.Dense(32, activation='relu', name="d3")(dropout2)
-        dropout3 = layers.Dropout(0.2)(dense3)
-        flatten = layers.Flatten()(dropout3)
-        out_mu = layers.Dense(self.action_dim, activation='relu')(flatten)
+        mario_input = layers.Input(shape=(2, ))
+        mario_x = layers.Dense(10, activation='relu')(mario_input)
+        mario_x = layers.Dropout(0.2)(mario_x)
+        mario_x = layers.BatchNormalization()(mario_x)
+        mario_x = layers.Dense(20, activation='relu')(mario_x)
+        mario_x = layers.Dropout(0.2)(mario_x)
+        mario_x = layers.Dense(10, activation='relu')(mario_x)
+
+        block_input = layers.Input(shape=(40, 3))
+        block_x = layers.Dense(100, activation='relu')(block_input)
+        block_x = layers.Dropout(0.2)(block_x)
+        block_x = layers.BatchNormalization()(block_x)
+        block_x = layers.Dense(200, activation='relu')(block_x)
+        block_x = layers.Dropout(0.2)(block_x)
+        block_x = layers.Flatten()(block_x)
+        block_x = layers.Dense(10, activation='relu')(block_x)
+
+        enemy_input = layers.Input(shape=(10, 3))
+        enemy_x = layers.Dense(25, activation='relu')(enemy_input)
+        enemy_x = layers.Dropout(0.2)(enemy_x)
+        enemy_x = layers.BatchNormalization()(enemy_x)
+        enemy_x = layers.Dense(50, activation='relu')(enemy_x)
+        enemy_x = layers.Dropout(0.2)(enemy_x)
+        enemy_x = layers.Flatten()(enemy_x)
+        enemy_x = layers.Dense(10, activation='relu')(enemy_x)
+
+        rd_input = layers.Input(shape=(10, 3))
+        rd_x = layers.Dense(25, activation='relu')(rd_input)
+        rd_x = layers.Dropout(0.2)(rd_x)
+        rd_x = layers.BatchNormalization()(rd_x)
+        rd_x = layers.Dense(50, activation='relu')(rd_x)
+        rd_x = layers.Dropout(0.2)(rd_x)
+        rd_x = layers.Flatten()(rd_x)
+        rd_x = layers.Dense(10, activation='relu')(rd_x)
+
+        final = layers.Concatenate()([mario_x, block_x, enemy_x, rd_x])
+        final = layers.Dense(10, activation='relu')(final)
+        out_mu = layers.Dense(self.action_dim, activation='relu')(final)
         mu_output = layers.Lambda(lambda x: x * self.action_bound)(out_mu)
-        std_output = layers.Dense(self.action_dim, activation='relu')(flatten)
+        std_output = layers.Dense(self.action_dim, activation='relu')(final)
+        # inputs = layers.Input(shape=(2, 40, 2,))
+        # dense = layers.Dense(128, activation='relu', name="d1")(inputs)
+        # dropout = layers.Dropout(0.2)(dense)
+        # dense2 = layers.Dense(64, activation='relu', name="d2")(dropout)
+        # dropout2 = layers.Dropout(0.2)(dense2)
+        # dense3 = layers.Dense(32, activation='relu', name="d3")(dropout2)
+        # dropout3 = layers.Dropout(0.2)(dense3)
+        # flatten = layers.Flatten()(dropout3)
+        # out_mu = layers.Dense(self.action_dim, activation='relu')(flatten)
+        # mu_output = layers.Lambda(lambda x: x * self.action_bound)(out_mu)
+        # std_output = layers.Dense(self.action_dim, activation='relu')(flatten)
 
         # inputs = layers.Input((480, 640, 1,))
         # cnn_1 = layers.Conv2D(32, 3, strides=(3, 3), activation='relu')(inputs)
@@ -71,12 +111,23 @@ class Actor:
         # out_mu = layers.Dense(self.action_dim, activation='relu')(flatten)
         # mu_output = layers.Lambda(lambda x: x * self.action_bound)(out_mu)
         # std_output = layers.Dense(self.action_dim, activation='relu')(flatten)
-        return tf.keras.models.Model(inputs, [mu_output, std_output])
+        return tf.keras.models.Model([mario_input, block_input, enemy_input, rd_input], [mu_output, std_output])
 
     def get_action(self, state):
-        state = np.reshape(state, [1, 2, 40, 2])
+        # print(f"mario : {state[0]}")
+        try:
+            mario = np.reshape(state[0], [1, 2])
+            block = np.reshape(state[1], [1, 40, 3])
+            enemy = np.reshape(state[2], [1, 10, 3])
+            random = np.reshape(state[2], [1, 10, 3])
+        except ValueError:
+            mario = np.reshape(state[0][0], [1, 2])
+            block = np.reshape(state[0][1], [1, 40, 3])
+            enemy = np.reshape(state[0][2], [1, 10, 3])
+            random = np.reshape(state[0][2], [1, 10, 3])
+        # state = np.reshape(state, [1, 2, 40, 2])
         # print(state.shape, state)
-        mu, std = self.model.predict(state)
+        mu, std = self.model.predict([mario, block, enemy, random])
         mu, std = mu[0], std[0]
         return np.random.normal(mu, std, size=self.action_dim)
 
@@ -119,18 +170,48 @@ class Critic:
         #     layers.Dense(50, activation='relu'),
         #     layers.Dense(1, activation='linear')
         # ])
+        mario_input = layers.Input(shape=(2,))
+        mario_x = layers.BatchNormalization()(mario_input)
+        mario_x = layers.Dense(20, activation='relu')(mario_x)
+        mario_x = layers.Dropout(0.2)(mario_x)
+        mario_x = layers.Dense(10, activation='relu')(mario_x)
 
-        return tf.keras.Sequential(
-            [
-                Input((2, 40, 2)),
-                Dense(128, activation="relu"),
-                Dense(64, activation="relu"),
-                Flatten(),
-                Dense(128, activation="relu"),
-                Dense(32, activation="relu"),
-                Dense(1, activation="linear"),
-            ]
-        )
+        block_input = layers.Input(shape=(40, 3))
+        block_x = layers.BatchNormalization()(block_input)
+        block_x = layers.Dense(200, activation='relu')(block_x)
+        block_x = layers.Dropout(0.2)(block_x)
+        block_x = layers.Flatten()(block_x)
+        block_x = layers.Dense(10, activation='relu')(block_x)
+
+        enemy_input = layers.Input(shape=(10, 3))
+        enemy_x = layers.Dense(50, activation='relu')(enemy_input)
+        enemy_x = layers.Dropout(0.2)(enemy_x)
+        enemy_x = layers.Flatten()(enemy_x)
+        enemy_x = layers.Dense(10, activation='relu')(enemy_x)
+
+        rd_input = layers.Input(shape=(10, 3))
+        rd_x = layers.BatchNormalization()(rd_input)
+        rd_x = layers.Dense(50, activation='relu')(rd_x)
+        rd_x = layers.Dropout(0.2)(rd_x)
+        rd_x = layers.Flatten()(rd_x)
+        rd_x = layers.Dense(10, activation='relu')(rd_x)
+
+        final = layers.Concatenate()([mario_x, block_x, enemy_x, rd_x])
+        final = layers.Dense(1, activation='linear')(final)
+
+        return tf.keras.Model(inputs=[mario_input, block_input, enemy_input, rd_input], outputs=final)
+
+        # return tf.keras.Sequential(
+        #     [
+        #         Input((2, 40, 2)),
+        #         Dense(128, activation="relu"),
+        #         Dense(64, activation="relu"),
+        #         Flatten(),
+        #         Dense(128, activation="relu"),
+        #         Dense(32, activation="relu"),
+        #         Dense(1, activation="linear"),
+        #     ]
+        # )
 
     def compute_loss(self, v_pred, td_targets):
         mse = tf.keras.losses.MeanSquaredError()
@@ -243,17 +324,19 @@ class A3CWorker(Thread):
         # print("finally reached here!")
         while self.max_episodes >= GLOBAL_EPISODE_NUM:
             state_batch = []
+            mario_batch = []
+            block_batch = []
+            enemy_batch = []
+            rdbox_batch = []
             action_batch = []
             reward_batch = []
             episode_reward, done = 0, False
 
-            try:
-                state = np.reshape(self.env.reset(), [1, 2, 40, 2])
-            except ValueError:
-                state = self.env.reset()
-                print(state.shape, state)
+            state = self.env.reset()
+            # print("game dead, now reset...")
 
             while not done:
+                # print(f"Game status : done{done}")
                 # 현재 상태로부터 취할 행동을 Actor로부터 얻어음
                 action = self.actor.get_action(state)
                 action = np.clip(action, -self.action_bound, self.action_bound)
@@ -261,28 +344,49 @@ class A3CWorker(Thread):
                 # 얻어온 행동을 실제 Env에 작용, 다음 상태와 reward를 받아옴
                 next_state, reward, done, _ = self.env.step(action)
 
-                state = np.reshape(state, [1, 2, 40, 2])
+                # state = np.reshape(state, [1, 2, 40, 2])
+                mario = np.reshape(state[0], [1, 2])
+                block = np.reshape(state[1], [1, 40, 3])
+                enemy = np.reshape(state[2], [1, 10, 3])
+                rdbox = np.reshape(state[2], [1, 10, 3])
+
                 action = np.reshape(action, [1, 4])
-                next_state = np.reshape(next_state, [1, 2, 40, 2])
+                # next_state = np.reshape(next_state, [1, 2, 40, 2])
+                n_mario = np.reshape(next_state[0], [1, 2])
+                n_block = np.reshape(next_state[1], [1, 40, 3])
+                n_enemy = np.reshape(state[2], [1, 10, 3])
+                n_random = np.reshape(next_state[2], [1, 10, 3])
                 reward = np.reshape(reward, [1, 1])
+
                 # 각 상태, 행동, 보상을 저장함
-                state_batch.append(state)
+                mario_batch.append(mario)
+                block_batch.append(block)
+                enemy_batch.append(enemy)
+                rdbox_batch.append(rdbox)
+                # state_batch.append([mario, block, random])
                 action_batch.append(action)
                 reward_batch.append(reward)
 
                 if len(state_batch) >= args.update_interval or done:
-                    states = np.array([state.squeeze() for state in state_batch])
+                    # states = np.array([state.squeeze() for state in state_batch])
+                    mario = np.array([mario.squeeze() for mario in mario_batch])
+                    block = np.array([block.squeeze() for block in block_batch])
+                    enemy = np.array([enemy.squeeze() for enemy in enemy_batch])
+                    rdbox = np.array([rdbox.squeeze() for rdbox in rdbox_batch])
                     actions = np.array([action.squeeze() for action in action_batch])
                     rewards = np.array([reward.squeeze() for reward in reward_batch])
-                    next_v_value = self.critic.model.predict(next_state)
+                    next_v_value = self.critic.model.predict([n_mario, n_block, n_enemy, n_random])
                     td_targets = self.n_step_td_target(
                         (rewards + 8) / 8, next_v_value, done
                     )
-                    advantages = td_targets - self.critic.model.predict(states)
+                    # advantages = td_targets - self.critic.model.predict(states)
+                    advantages = td_targets - self.critic.model.predict([mario, block, enemy, rdbox])
 
                     locks.acquire()
-                    actor_loss = self.global_actor.train(states, actions, advantages)
-                    critic_loss = self.global_critic.train(states, td_targets)
+                    # actor_loss = self.global_actor.train(states, actions, advantages)
+                    # critic_loss = self.global_critic.train(states, td_targets)
+                    actor_loss = self.global_actor.train([mario, block, enemy, rdbox], actions, advantages)
+                    critic_loss = self.global_critic.train([mario, block, enemy, rdbox], td_targets)
 
                     self.actor.model.set_weights(self.global_actor.model.get_weights())
                     self.critic.model.set_weights(
@@ -295,7 +399,7 @@ class A3CWorker(Thread):
                     locks.release()
 
                 episode_reward += reward[0][0]
-                state = next_state[0]
+                state = next_state
 
             print(f"Episode#{GLOBAL_EPISODE_NUM} on Thread:{self.nums},  Reward:{episode_reward}")
             tf.summary.scalar("episode_reward", episode_reward, step=GLOBAL_EPISODE_NUM)
