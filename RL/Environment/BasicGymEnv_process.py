@@ -335,7 +335,7 @@ class BasicEnv(gym.Env):
 
         self.reset_value += 1
         value = self.get_value_from_queue([2, action])
-        print(value)
+        # print(value)
         # self.ptoc_queue.put([2, action])
         # value = self.ctop_queue.get()
         if self.reset_value > (1 / act_frame_sec) * reset_time:  # 20초동안 clear 못하면 reset
