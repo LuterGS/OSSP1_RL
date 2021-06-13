@@ -97,7 +97,7 @@ class MultiMario(Process):
                     stuff[rmr_count + 15] = entity_pos
                     rmr_count += 1
 
-        return np.asarray(goomba_koopa + coins + stuff)
+        return goomba_koopa + coins + stuff
 
 
     def observation(self, mario, entity_list):
@@ -119,15 +119,16 @@ class MultiMario(Process):
 
             visible_blocks[vb_count] = [block[0] / self.map_length, block[1] / 14.0]
             vb_count += 1
-            print(visible_blocks[vb_count - 1])
+            # print(visible_blocks[vb_count - 1])
 
         entities = self.getEntityXY(mario_xy, entity_list, self.map_length)
         # exit(0)
 
-        res = np.asarray([visible_blocks, entities])
-        # print(res)
-        print(res[0][0][0])
-        return np.asarray([visible_blocks, entities])
+        final_output = np.asarray([visible_blocks, entities])
+        # final_output = np.asarray(visible_blocks + entities)
+        # print(final_output.shape, final_output)
+
+        return final_output
 
     def reset(self):
 

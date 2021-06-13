@@ -50,18 +50,29 @@ class Actor:
         self.entropy_beta = 0.01
 
     def nn_model(self):
-        inputs = layers.Input((480, 640, 1,))
-        cnn_1 = layers.Conv2D(32, 3, strides=(3, 3), activation='relu')(inputs)
-        batch_norm = layers.BatchNormalization()(cnn_1)
-        dropout = layers.Dropout(0.2)(batch_norm)
-        flatten = layers.Flatten()(dropout)
+
+        inputs = layers.Input(shape=(2, 60, 2,))
+        dense = layers.Dense(64, activation='relu', name="d1")(inputs)
+        dropout = layers.Dropout(0.2)(dense)
+        dense2 = layers.Dense(32, activation='relu', name="d2")(dropout)
+        flatten = layers.Flatten()(dense2)
         out_mu = layers.Dense(self.action_dim, activation='relu')(flatten)
         mu_output = layers.Lambda(lambda x: x * self.action_bound)(out_mu)
         std_output = layers.Dense(self.action_dim, activation='relu')(flatten)
+
+        # inputs = layers.Input((480, 640, 1,))
+        # cnn_1 = layers.Conv2D(32, 3, strides=(3, 3), activation='relu')(inputs)
+        # batch_norm = layers.BatchNormalization()(cnn_1)
+        # dropout = layers.Dropout(0.2)(batch_norm)
+        # flatten = layers.Flatten()(dropout)
+        # out_mu = layers.Dense(self.action_dim, activation='relu')(flatten)
+        # mu_output = layers.Lambda(lambda x: x * self.action_bound)(out_mu)
+        # std_output = layers.Dense(self.action_dim, activation='relu')(flatten)
         return tf.keras.models.Model(inputs, [mu_output, std_output])
 
     def get_action(self, state):
-        state = np.reshape(state, [1, 480, 640])
+        state = np.reshape(state, [1, 2, 60, 2])
+        # print(state.shape, state)
         mu, std = self.model.predict(state)
         mu, std = mu[0], std[0]
         return np.random.normal(mu, std, size=self.action_dim)
@@ -94,28 +105,29 @@ class Critic:
         self.opt = tf.keras.optimizers.Adam(args.critic_lr)
 
     def nn_model(self):
-        return tf.keras.Sequential([
-            layers.InputLayer(input_shape=(480, 640, )),
-            layers.Reshape((480, 640, 1, )),
-            layers.Conv2D(64, 10, strides=(10, 10,), activation='relu'),
-            layers.Dropout(0.2),
-            # layers.Conv2D(32, 3, activation='relu'),
-            # layers.Dropout(0.2),
-            layers.Flatten(),
-            layers.Dense(50, activation='relu'),
-            layers.Dense(1, activation='linear')
-        ])
+        # return tf.keras.Sequential([
+        #     layers.InputLayer(input_shape=(480, 640, )),
+        #     layers.Reshape((480, 640, 1, )),
+        #     layers.Conv2D(64, 10, strides=(10, 10,), activation='relu'),
+        #     layers.Dropout(0.2),
+        #     # layers.Conv2D(32, 3, activation='relu'),
+        #     # layers.Dropout(0.2),
+        #     layers.Flatten(),
+        #     layers.Dense(50, activation='relu'),
+        #     layers.Dense(1, activation='linear')
+        # ])
 
-        # return tf.keras.Sequential(
-        #     [
-        #         Input((480, 640,)),
-        #         Flatten(),
-        #         Dense(32, activation="relu"),
-        #         Dense(32, activation="relu"),
-        #         Dense(16, activation="relu"),
-        #         Dense(1, activation="linear"),
-        #     ]
-        # )
+        return tf.keras.Sequential(
+            [
+                Input((2, 60, 2)),
+                Dense(64, activation="relu"),
+                Dense(32, activation="relu"),
+                Flatten(),
+                Dense(32, activation="relu"),
+                Dense(16, activation="relu"),
+                Dense(1, activation="linear"),
+            ]
+        )
 
     def compute_loss(self, v_pred, td_targets):
         mse = tf.keras.losses.MeanSquaredError()
@@ -242,9 +254,9 @@ class A3CWorker(Thread):
                 # 얻어온 행동을 실제 Env에 작용, 다음 상태와 reward를 받아옴
                 next_state, reward, done, _ = self.env.step(action)
 
-                state = np.reshape(state, [1, 480, 640])
+                state = np.reshape(state, [1, 2, 60, 2])
                 action = np.reshape(action, [1, 4])
-                next_state = np.reshape(next_state, [1, 480, 640])
+                next_state = np.reshape(next_state, [1, 2, 60, 2])
                 reward = np.reshape(reward, [1, 1])
                 # 각 상태, 행동, 보상을 저장함
                 state_batch.append(state)
