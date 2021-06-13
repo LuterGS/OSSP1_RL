@@ -79,28 +79,27 @@ class MultiMario(Process):
             if entity_pos[1] < 0:
                 continue
 
-            entity_pos[0] = entity_pos[0] / map_length
-            entity_pos[1] = entity_pos[1] / 14
+            res = [entity_pos[0] - mario_xy[0] / 10.0, entity_pos[1] - mario_xy[1] / 10.0]
 
             if str(type(entity)) == "<class 'Pygame.entities.Goomba.Goomba'>":
                 if goomba_count < 10:
-                    goomba_koopa[goomba_count] = entity_pos
+                    goomba_koopa[goomba_count] = res
                     goomba_count += 1
             if str(type(entity)) == "<class 'Pygame.entities.Koopa.Koopa'>":
                 if koopa_count < 10:
-                    goomba_koopa[koopa_count + 10] = entity_pos
+                    goomba_koopa[koopa_count + 10] = res
                     koopa_count += 1
             if str(type(entity)) == "<class 'Pygame.entities.Coin.Coin'>":
                 if coin_count < 10:
-                    coins[coin_count] = entity_pos
+                    coins[coin_count] = res
                     coin_count += 1
             if str(type(entity)) == "<class 'Pygame.entities.RandomBox.RandomBox'>":
                 if rdbox_count < 5:
-                    stuff[rdbox_count] = entity_pos
+                    stuff[rdbox_count] = res
                     rdbox_count += 1
             if str(type(entity)) == "<class 'Pygame.entities.Mushroom.RedMushroom'>":
                 if rmr_count < 5:
-                    stuff[rmr_count + 5] = entity_pos
+                    stuff[rmr_count + 5] = res
                     rmr_count += 1
 
         return goomba_koopa + coins + stuff
@@ -123,7 +122,7 @@ class MultiMario(Process):
             # block[1] = block[1] / 14.0
             # print(block[1])
 
-            visible_blocks[vb_count] = [block[0] / self.map_length, block[1] / 14.0]
+            visible_blocks[vb_count] = [block[0] - mario_xy[0] / 10.0, block[1] - mario_xy[1] / 10.0]
             vb_count += 1
             # print(visible_blocks[vb_count - 1])
 
@@ -178,7 +177,7 @@ class MultiMario(Process):
             self.clock.tick(self.max_frame_rate)
 
         self.time = self.dashboard.time
-        self.pos_percent = (self.mario.rect.x / 32) / self.mario.levelObj.levelLength
+        self.mario_x = (self.mario.rect.x / 32)
         #
         # # 그 이후에 observation을 받아오고
         # observation = np.reshape(ImgExtract.Capture(self.screen, cv2.COLOR_BGR2GRAY), [480,  640, 1])
@@ -195,15 +194,12 @@ class MultiMario(Process):
         if action[0] == action[1]:
             self.mario.input.button_pressed[0] = False
             self.mario.input.button_pressed[1] = False
-            reward -= 3
         elif action[0] < action[1]:
             self.mario.input.button_pressed[0] = True
             self.mario.input.button_pressed[1] = False
-            reward -= 10
         elif action[1] < action[0]:
             self.mario.input.button_pressed[0] = False
             self.mario.input.button_pressed[1] = True
-            reward += 20
         self.mario.input.button_pressed[2] = False if action[2] < 0.5 else True
         self.mario.input.button_pressed[3] = False if action[3] < 0.5 else True
 
@@ -249,36 +245,39 @@ class MultiMario(Process):
 
         # 현재 시간과 위치를 측정
         time = self.dashboard.time
-        pos_percent = (self.mario.rect.x / 32) / self.mario.levelObj.levelLength
-        ypos_percent = self.mario.rect.y / 32
+        mario_x = self.mario.rect.x / 32
+        pos_percent = mario_x / self.mario.levelObj.levelLength
 
         # 기존의 위치랑 비교해 잘 진행했는지 비교
-        mov_diff = pos_percent - self.pos_percent
+        mov_diff = mario_x - self.mario_x
+
         # print(pos_percent, self.pos_percent)
 
         # # reward 1. 거리를 토대로 더 앞으로 갔으면 +, 뒤로 갔으면 - 제공
-        # if mov_diff < 0:
-        #     reward -= 0.5
-        # if mov_diff > 0:
-        #     reward += 10000
-        # if mov_diff == 0:
-        #     reward -= 0.3
+        if mov_diff > 0:
+            reward += mov_diff * 2 * 10
+            # print(reward)
+        else:
+            reward += mov_diff * 10
+            # print(reward)
 
         # 20초를 클리어 기준으로 삼을 때
         # 넉넉하게, 4초씩 끊어서 판단함 (5개 분류, 20%)
-        if 0 <= time < 4:
+        seperated = reset_time / 5
+
+        if 0 <= time < seperated:
             pass
-        elif 4 <= time < 8 and pos_percent < 20:
-            reward -= 20
-        elif 8 < time <= 12 and pos_percent < 40:
-            reward -= 20
-        elif 12 < time <= 16 and pos_percent < 60:
-            reward -= 20
-        elif 16 < time <= 20 and pos_percent < 80:
-            reward -= 20
+        elif seperated <= time < seperated * 2 and pos_percent >= 20:
+            reward += 20
+        elif seperated * 2 < time <= seperated * 3 and pos_percent >= 40:
+            reward += 20
+        elif seperated * 3 < time <= seperated * 4 and pos_percent >= 60:
+            reward += 20
+        elif seperated * 4 < time <= seperated * 5 and pos_percent >= 80:
+            reward += 20
 
         self.time = time
-        self.pos_percent = pos_percent
+        self.mario_x = mario_x
 
         # 이후에 observation을 받아옴
         observation = self.observation(self.mario, self.level.returnEntityList())
